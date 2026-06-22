@@ -116,6 +116,21 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
       <div style="font-size:14px;color:var(--ts)">开始时间：{{reportData.startTime}}</div>
       <div style="font-size:14px;color:var(--ts);margin-top:6px">结束时间：{{reportData.endTime}}</div>
     </div>
+    <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
+      <div style="font-size:16px;font-weight:600;margin-bottom:10px;color:var(--text)">距离密度评估</div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cb)">
+        <span style="font-size:14px;color:var(--ts)">事件密度</span>
+        <span style="font-size:14px;color:var(--text)">{{densityInfo.density}} 次/km</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cb)">
+        <span style="font-size:14px;color:var(--ts)">扣分系数</span>
+        <span style="font-size:14px;color:var(--text)">{{densityInfo.factor}}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0">
+        <span style="font-size:14px;color:var(--ts)">评估结果</span>
+        <span style="font-size:14px;color:var(--text)">{{densityInfo.level}}</span>
+      </div>
+    </div>
     <div v-if="reportData.events.length>0" style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
       <div style="font-size:16px;font-weight:600;margin-bottom:12px;color:var(--text)">事件详情</div>
       <div v-for="(ev,i) in reportData.events" :key="i" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--cb)">
@@ -193,6 +208,16 @@ function classifyAccel(val,thresholds){
   return 0;
 }
 
+// 距离密度扣分系数
+function getDensityFactor(eventCount,distanceKm){
+  if(distanceKm<0.5)return 1.0; // 样本不足，不调整
+  var density=eventCount/distanceKm;
+  if(density<0.1)return 0.8;   // 优秀
+  if(density<0.5)return 1.0;   // 正常
+  if(density<1.0)return 1.2;   // 较差
+  return 1.5;                   // 很差
+}
+
 Vue.createApp({
   data:function(){return{
     page:'home',title:'晕不晕',themeMode:'auto',theme:'dark',
@@ -207,6 +232,15 @@ Vue.createApp({
     scoreBg:function(){
       if(this.score<=0)return'height:0%';
       return'height:'+Math.max(5,this.score)+'%';
+    },
+    densityInfo:function(){
+      var distKm=this.reportData.distance/1000;
+      var eventCount=this.reportData.events.length;
+      if(distKm<0.5)return{density:'-',factor:'-',level:'距离过短，不调整'};
+      var density=(eventCount/distKm).toFixed(2);
+      var factor=getDensityFactor(eventCount,distKm);
+      var level=factor<1?'优秀，扣分减少':factor===1?'正常，标准扣分':factor<1.5?'较差，扣分增加':'很差，扣分大幅增加';
+      return{density:density,factor:factor+'x',level:level};
     },
     reportLevel:function(){var s=this.reportData.score;if(s>=95)return{label:'无感',desc:'完全没有晕车感',c:'#00c853',icon:'😊'};if(s>=88)return{label:'轻微',desc:'几乎感觉不到不适',c:'#4caf50',icon:'🙂'};if(s>=78)return{label:'一般',desc:'略有不适但可接受',c:'#8bc34a',icon:'😐'};if(s>=65)return{label:'小晕',desc:'开始出现晕车症状',c:'#ff9800',icon:'😕'};if(s>=50)return{label:'晕',desc:'明显晕车不适',c:'#ff5722',icon:'😣'};if(s>=30)return{label:'严重',desc:'严重晕车',c:'#f44336',icon:'🤮'};return{label:'非常严重',desc:'极度不适',c:'#b71c1c',icon:'💀'}}
   },
@@ -331,11 +365,14 @@ Vue.createApp({
       if(dup.length>0)return;
       var levelIdx=Math.min(level,10)-1;
       var dedEntry=DEDUCT_TABLE[levelIdx]||DEDUCT_TABLE[0];
-      var ded=dedEntry.ded*weight;
+      // 计算距离密度扣分系数
+      var distKm=this.dist/1000;
+      var densityFactor=getDensityFactor(this.events.length,distKm);
+      var ded=dedEntry.ded*weight*densityFactor;
       this._recent.push({name:name,t:now});
       this._totalDed+=ded;
       this.score=Math.round((100-this._totalDed)*10)/10;
-      this.events.unshift({name:name,level:level,levelName:dedEntry.name,ded:ded});
+      this.events.unshift({name:name,level:level,levelName:dedEntry.name,ded:ded,densityFactor:densityFactor});
     }
   },
   mounted:function(){
