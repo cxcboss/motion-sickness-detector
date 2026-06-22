@@ -24,7 +24,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
       <img :src="showNormal?'头图-不晕.webp':'头图-晕.webp'" class="img-fade" style="width:120px;height:120px;object-fit:cover;border-radius:16px" alt="晕车检测">
     </div>
     <h1 style="font-size:30px;font-weight:200;letter-spacing:6px;margin-bottom:8px;color:var(--text)">{{title}}</h1>
-    <p style="color:var(--ts);font-size:14px;margin-bottom:36px">驾驶舒适度实时检测</p>
+    <p style="color:var(--ts);font-size:14px;margin-bottom:36px">把手机平放在平面上，点击"开始"测试开车的平稳度。</p>
     <button style="padding:14px 52px;border-radius:28px;border:none;background:var(--accent);color:#000;font-size:16px;font-weight:600;cursor:pointer" @click="start">
       {{permLoading?'请求权限中...':'开始检测'}}
     </button>
@@ -92,9 +92,10 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 
   <!-- REPORT -->
   <div v-if="page==='report'" style="position:fixed;inset:0;background:var(--bg);z-index:20;overflow-y:auto;padding:20px 16px;padding-bottom:80px;padding-top:calc(20px + env(safe-area-inset-top,0px))">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div></div>
-      <span @click="page=prevPage||'history'" style="font-size:13px;color:var(--accent);cursor:pointer">← 返回</span>
+    <div v-if="prevPage==='history'" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+      <button @click="page='history'" style="padding:8px 16px;border-radius:12px;background:var(--card);border:1px solid var(--cb);color:var(--text);font-size:13px;cursor:pointer">← 返回</button>
+      <span style="font-size:17px;font-weight:600;color:var(--text)">报告详情</span>
+      <div style="width:60px"></div>
     </div>
     <div style="text-align:center;padding:10px 0">
       <div style="display:flex;align-items:baseline;justify-content:center">
