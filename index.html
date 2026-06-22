@@ -102,9 +102,8 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
         <span style="font-size:72px;font-weight:100;font-family:monospace;color:var(--text)">{{scoreInt}}</span>
         <span style="font-size:24px;font-weight:100;font-family:monospace;color:var(--text)">.{{scoreDec}}</span>
       </div>
-      <div style="font-size:22px;margin-top:4px">{{reportLevel.icon}}</div>
-      <div style="font-size:18px;font-weight:600;margin-top:4px" :style="{color:reportLevel.c}">{{reportLevel.label}}</div>
-      <div style="font-size:13px;color:var(--ts);margin-top:4px">{{reportLevel.desc}}</div>
+      <div style="font-size:18px;font-weight:600;margin-top:8px" :style="{color:reportLevel.c}">{{reportLevel.label}}</div>
+      <div style="font-size:14px;font-weight:600;margin-top:12px;padding:8px 16px;background:var(--card);border-radius:20px;display:inline-block;color:var(--accent)">{{getSlogan(reportData.score)}}</div>
     </div>
     <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
       <div style="font-size:16px;font-weight:600;margin-bottom:10px;color:var(--text)">综合评分</div>
@@ -265,7 +264,7 @@ Vue.createApp({
     scoreDec:function(){return Math.abs(Math.round((this.score%1)*10))},
     finalScore:function(){var distKm=this.reportData.distance/1000;var factor=getDensityFactor(this.reportData.events.length,distKm);return Math.max(0,Math.round((this.reportData.score*factor)*10)/10)},
     densityInfo:function(){var distKm=this.reportData.distance/1000;var eventCount=this.reportData.events.length;if(distKm<.5)return{density:'-',factor:'1.0x',level:'距离过短'};var density=(eventCount/distKm).toFixed(2);var factor=getDensityFactor(eventCount,distKm);var level=factor<1?'优秀':factor===1?'正常':factor<1.5?'较差':'很差';return{density:density,factor:factor+'x',level:level}},
-    reportLevel:function(){var s=this.reportData.score;if(s>=95)return{label:'无感',desc:'完全没有晕车感',c:'#00c853',icon:'😊'};if(s>=88)return{label:'轻微',desc:'几乎感觉不到不适',c:'#4caf50',icon:'🙂'};if(s>=78)return{label:'一般',desc:'略有不适但可接受',c:'#8bc34a',icon:'😐'};if(s>=65)return{label:'小晕',desc:'开始出现晕车症状',c:'#ff9800',icon:'😕'};if(s>=50)return{label:'晕',desc:'明显晕车不适',c:'#ff5722',icon:'😣'};if(s>=30)return{label:'严重',desc:'严重晕车',c:'#f44336',icon:'🤮'};return{label:'非常严重',desc:'极度不适',c:'#b71c1c',icon:'💀'}}
+    reportLevel:function(){var s=this.reportData.score;if(s>=95)return{label:'无感',desc:'完全没有晕车感',c:'#00c853'};if(s>=88)return{label:'轻微',desc:'几乎感觉不到不适',c:'#4caf50'};if(s>=78)return{label:'一般',desc:'略有不适但可接受',c:'#8bc34a'};if(s>=65)return{label:'小晕',desc:'开始出现晕车症状',c:'#ff9800'};if(s>=50)return{label:'晕',desc:'明显晕车不适',c:'#ff5722'};if(s>=30)return{label:'严重',desc:'严重晕车',c:'#f44336'};return{label:'非常严重',desc:'极度不适',c:'#b71c1c'}}
   },
   methods:{
     fmtTime:function(s){var m=Math.floor(s/60),ss=s%60;return(m<10?'0':'')+m+':'+(ss<10?'0':'')+ss},
@@ -298,82 +297,80 @@ Vue.createApp({
     generatePoster:function(){
       var canvas=this.$refs.posterCanvas;if(!canvas)return;
       var ctx=canvas.getContext('2d');
-      var W=640,H=960;
+      var W=750,H=1125;
+      canvas.width=W;canvas.height=H;
       // 背景色
       ctx.fillStyle='#FBF7F1';ctx.fillRect(0,0,W,H);
-      // 装饰圆
-      ctx.fillStyle='rgba(203,162,230,0.08)';ctx.beginPath();ctx.arc(W-60,60,100,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='rgba(203,162,230,0.06)';ctx.beginPath();ctx.arc(50,H-80,70,0,Math.PI*2);ctx.fill();
-      // 标题
-      ctx.fillStyle='#1a1a1a';ctx.font='bold 28px sans-serif';ctx.textAlign='center';
-      ctx.fillText('晕不晕 · 驾驶报告',W/2,70);
+      // 装饰
+      ctx.fillStyle='rgba(203,162,230,0.06)';
+      ctx.beginPath();ctx.arc(W-50,50,90,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(40,H-60,60,0,Math.PI*2);ctx.fill();
       // 综合评分（大号）
-      ctx.font='bold 120px monospace';ctx.fillStyle='#CBA2E6';
-      ctx.fillText(this.finalScore,W/2,200);
-      // 基础评分（小号）
-      ctx.font='24px sans-serif';ctx.fillStyle='#666';
-      ctx.fillText('基础评分：'+this.reportData.score,W/2,240);
+      ctx.textAlign='center';
+      ctx.font='bold 160px monospace';ctx.fillStyle='#CBA2E6';
+      ctx.fillText(this.finalScore,W/2,260);
+      // 基础评分
+      ctx.font='28px sans-serif';ctx.fillStyle='#888';
+      ctx.fillText('基础评分：'+this.reportData.score,W/2,310);
       // 等级
-      ctx.font='bold 32px sans-serif';ctx.fillStyle='#1a1a1a';
-      ctx.fillText(this.reportLevel.icon+' '+this.reportLevel.label,W/2,290);
-      // 标语（大号，描边效果）
+      ctx.font='bold 36px sans-serif';ctx.fillStyle='#333';
+      ctx.fillText(this.reportLevel.label,W/2,370);
+      // 标语（醒目位置，加粗）
       var slogan=this.getSlogan(this.reportData.score);
-      ctx.font='bold 36px sans-serif';ctx.textAlign='center';
-      ctx.strokeStyle='#CBA2E6';ctx.lineWidth=4;ctx.strokeText(slogan,W/2,350);
-      ctx.fillStyle='#1a1a1a';ctx.fillText(slogan,W/2,350);
+      ctx.font='bold 42px sans-serif';ctx.fillStyle='#CBA2E6';
+      ctx.fillText(slogan,W/2,440);
       // 分隔线
       ctx.strokeStyle='#e0d8cc';ctx.lineWidth=2;
-      ctx.beginPath();ctx.moveTo(80,390);ctx.lineTo(W-80,390);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(80,490);ctx.lineTo(W-80,490);ctx.stroke();
       // 数据卡片
       var self=this;
       var cards=[
-        {icon:'⏱',label:'时长',value:this.fmtTime(this.reportData.duration)},
-        {icon:'📏',label:'距离',value:(this.reportData.distance/1000).toFixed(1)+'km'},
-        {icon:'⚡',label:'事件',value:this.reportData.events.length+'次'}
+        {label:'时长',value:this.fmtTime(this.reportData.duration)},
+        {label:'距离',value:(this.reportData.distance/1000).toFixed(1)+'km'},
+        {label:'事件',value:this.reportData.events.length+'次'}
       ];
       cards.forEach(function(c,i){
-        var x=107+i*213;
+        var x=125+i*250;
         ctx.fillStyle='#f0ebe3';
-        ctx.beginPath();ctx.roundRect(x-50,420,100,80,12);ctx.fill();
-        ctx.font='28px sans-serif';ctx.fillStyle='#CBA2E6';ctx.textAlign='center';
-        ctx.fillText(c.icon,x,455);
-        ctx.font='bold 20px monospace';ctx.fillStyle='#1a1a1a';
-        ctx.fillText(c.value,x,482);
-        ctx.font='12px sans-serif';ctx.fillStyle='#888';
-        ctx.fillText(c.label,x,498);
+        ctx.beginPath();ctx.roundRect(x-65,520,130,90,12);ctx.fill();
+        ctx.font='bold 28px monospace';ctx.fillStyle='#1a1a1a';ctx.textAlign='center';
+        ctx.fillText(c.value,x,570);
+        ctx.font='14px sans-serif';ctx.fillStyle='#888';
+        ctx.fillText(c.label,x,595);
       });
-      // 事件统计
+      // 事件统计（无emoji）
       var eventCounts=this.getEventCounts();
-      var eventIcons={'急加速':'🚀','急减速':'🛑','急转向':'🔄','顿挫':'〰️','摇摆':'↔️'};
       var eventNames=Object.keys(eventCounts);
       if(eventNames.length>0){
-        ctx.font='bold 18px sans-serif';ctx.fillStyle='#1a1a1a';ctx.textAlign='left';
-        ctx.fillText('事件详情',80,550);
+        ctx.font='bold 22px sans-serif';ctx.fillStyle='#333';ctx.textAlign='left';
+        ctx.fillText('事件统计',80,670);
+        var cols=Math.min(eventNames.length,3);
         eventNames.forEach(function(name,i){
-          var y=585+i*35;
-          var icon=eventIcons[name]||'•';
-          ctx.font='16px sans-serif';ctx.fillStyle='#333';
-          ctx.fillText(icon+' '+name,y<600?'80':'80',y);
-          ctx.textAlign='right';ctx.font='bold 16px monospace';ctx.fillStyle='#CBA2E6';
-          ctx.fillText(eventCounts[name].count+'次',W-80,y);
+          var col=i%3;
+          var row=Math.floor(i/3);
+          var x=100+col*200;
+          var y=710+row*60;
+          ctx.font='18px sans-serif';ctx.fillStyle='#555';
+          ctx.fillText(name,x,y);
+          ctx.font='bold 22px monospace';ctx.fillStyle='#CBA2E6';ctx.textAlign='right';
+          ctx.fillText(eventCounts[name].count+'次',x+150,y);
           ctx.textAlign='left';
         });
       }
-      // QR码
-      var qrY=eventNames.length>3?680:620;
-      var qrUrl=generateQRCode(window.location.href,150);
+      // QR码（右下角，缩小）
+      var qrUrl=generateQRCode(window.location.href,120);
       var img=new Image();img.crossOrigin='anonymous';
       img.onload=function(){
         ctx.fillStyle='#fff';
-        ctx.beginPath();ctx.roundRect(W/2-80,qrY,160,160,12);ctx.fill();
-        ctx.drawImage(img,W/2-70,qrY+10,140,140);
-        ctx.fillStyle='#888';ctx.font='12px sans-serif';ctx.textAlign='center';
-        ctx.fillText('扫码查看报告',W/2,qrY+170);
+        ctx.beginPath();ctx.roundRect(W-150,H-180,130,130,8);ctx.fill();
+        ctx.drawImage(img,W-140,H-170,110,110);
+        ctx.fillStyle='#aaa';ctx.font='10px sans-serif';ctx.textAlign='center';
+        ctx.fillText('扫码查看',W-85,H-55);
       };
       img.src=qrUrl;
       // 底部
-      ctx.fillStyle='#bbb';ctx.font='11px sans-serif';ctx.textAlign='center';
-      ctx.fillText('晕不晕 · 驾驶舒适度检测',W/2,H-25);
+      ctx.fillStyle='#ccc';ctx.font='11px sans-serif';ctx.textAlign='center';
+      ctx.fillText('晕不晕 · 驾驶舒适度检测',W/2,H-20);
     },
     downloadPoster:function(){var canvas=this.$refs.posterCanvas;if(!canvas)return;var link=document.createElement('a');link.download='晕不晕报告_'+this.reportData.score+'分.png';link.href=canvas.toDataURL('image/png');link.click()},
     onMotion:function(e){if(!this.recording||this.paused)return;var a=e.acceleration||e.accelerationIncludingGravity;if(!a)return;var ax=a.x||0,ay=a.y||0;if(!this._calibrated){this._gravSamples.push({x:ax,y:ay});if(this._gravSamples.length>=15){var gx=0,gy=0;for(var i=0;i<this._gravSamples.length;i++){gx+=this._gravSamples[i].x;gy+=this._gravSamples[i].y}this._gx=gx/15;this._gy=gy/15;this._calibrated=true;this._gravSamples=[]}return}ax-=this._gx;ay-=this._gy;var fx=Math.abs(ax)<.3?0:ax;var fy=Math.abs(ay)<.3?0:ay;var p=PROFILES[this.sensitivity];this._accelH.push({x:fx,y:fy,t:Date.now()});if(this._accelH.length>200)this._accelH=this._accelH.slice(-200);var bl=classifyAccel(-fy,p.b);if(bl>0)this.addEvt('急减速',bl,1.5);var al=classifyAccel(fy,p.a);if(al>0)this.addEvt('急加速',al,.75);var tl=classifyAccel(fx,p.t);if(tl>0)this.addEvt('急转向',tl,.8)},
