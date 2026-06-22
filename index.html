@@ -394,7 +394,15 @@ Vue.createApp({
     onMotion:function(e){if(!this.recording||this.paused)return;var a=e.acceleration||e.accelerationIncludingGravity;if(!a)return;var ax=a.x||0,ay=a.y||0;if(!this._calibrated){this._gravSamples.push({x:ax,y:ay});if(this._gravSamples.length>=15){var gx=0,gy=0;for(var i=0;i<this._gravSamples.length;i++){gx+=this._gravSamples[i].x;gy+=this._gravSamples[i].y}this._gx=gx/15;this._gy=gy/15;this._calibrated=true;this._gravSamples=[]}return}ax-=this._gx;ay-=this._gy;var fx=Math.abs(ax)<.3?0:ax;var fy=Math.abs(ay)<.3?0:ay;var p=PROFILES[this.sensitivity];this._accelH.push({x:fx,y:fy,t:Date.now()});if(this._accelH.length>200)this._accelH=this._accelH.slice(-200);var bl=classifyAccel(-fy,p.b);if(bl>0)this.addEvt('急减速',bl,1.5);var al=classifyAccel(fy,p.a);if(al>0)this.addEvt('急加速',al,.75);var tl=classifyAccel(fx,p.t);if(tl>0)this.addEvt('急转向',tl,.8)},
     addEvt:function(name,level,weight){var now=Date.now();var dup=this._recent.filter(function(e){return e.name===name&&(now-e.t)<1500});if(dup.length>0)return;var idx=Math.min(level,10)-1;var de=DEDUCT_TABLE[idx]||DEDUCT_TABLE[0];var distKm=this.dist/1000;var df=getDensityFactor(this.events.length,distKm);var ded=de.ded*weight*df;this._recent.push({name:name,t:now});this._totalDed+=ded;this.score=Math.round((100-this._totalDed)*10)/10;this.events.unshift({name:name,level:level,levelName:de.name,ded:ded,densityFactor:df})}
   },
-  mounted:function(){var self=this;try{var s=localStorage.getItem('sens');if(s&&PROFILES[s])self.sensitivity=s}catch(e){}try{var h=localStorage.getItem('history');if(h)self.history=JSON.parse(h)}catch(e){}self._imgTimer=setInterval(function(){self.showNormal=!self.showNormal},2000)},
+  mounted:function(){var self=this;
+    // 初始化主题跟随系统
+    self.theme=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light';
+    // 监听系统主题变化
+    window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',function(e){self.theme=e.matches?'dark':'light'});
+    try{var s=localStorage.getItem('sens');if(s&&PROFILES[s])self.sensitivity=s}catch(e){}
+    try{var h=localStorage.getItem('history');if(h)self.history=JSON.parse(h)}catch(e){}
+    self._imgTimer=setInterval(function(){self.showNormal=!self.showNormal},2000)
+  },
   beforeUnmount:function(){if(this._imgTimer)clearInterval(this._imgTimer)}
 }).mount('#app');
 </script>
