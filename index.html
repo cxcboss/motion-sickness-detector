@@ -298,97 +298,87 @@ Vue.createApp({
     generatePoster:function(){
       var canvas=this.$refs.posterCanvas;if(!canvas)return;
       var ctx=canvas.getContext('2d');
-      var W=750,H=1125;
+      var W=900,H=1350;
       canvas.width=W;canvas.height=H;
       // 背景
       ctx.fillStyle='#FBF7F1';ctx.fillRect(0,0,W,H);
       // 装饰圆
       ctx.fillStyle='rgba(203,162,230,0.05)';
-      ctx.beginPath();ctx.arc(W-40,40,80,0,Math.PI*2);ctx.fill();
-      ctx.beginPath();ctx.arc(30,H-50,50,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(W-50,50,100,0,Math.PI*2);ctx.fill();
+      ctx.beginPath();ctx.arc(40,H-60,60,0,Math.PI*2);ctx.fill();
       // 顶部小标签
-      ctx.fillStyle='#CBA2E6';ctx.font='bold 16px sans-serif';ctx.textAlign='center';
-      ctx.fillText('DRIVING REPORT',W/2,50);
+      ctx.fillStyle='#CBA2E6';ctx.font='bold 18px sans-serif';ctx.textAlign='center';
+      ctx.fillText('DRIVING REPORT',W/2,60);
       // 分隔线
-      ctx.strokeStyle='#e8e0d4';ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(100,70);ctx.lineTo(W-100,70);ctx.stroke();
+      ctx.strokeStyle='#e8e0d4';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(120,85);ctx.lineTo(W-120,85);ctx.stroke();
       // 综合评分（核心大字）
-      ctx.font='bold 180px monospace';ctx.fillStyle='#CBA2E6';ctx.textAlign='center';
-      ctx.fillText(this.finalScore,W/2,280);
+      ctx.font='bold 220px monospace';ctx.fillStyle='#CBA2E6';ctx.textAlign='center';
+      ctx.fillText(this.finalScore,W/2,320);
       // 基础评分（小字）
-      ctx.font='26px sans-serif';ctx.fillStyle='#999';
-      ctx.fillText('基础评分 '+this.reportData.score,W/2,320);
+      ctx.font='32px sans-serif';ctx.fillStyle='#999';
+      ctx.fillText('基础评分 '+this.reportData.score,W/2,370);
       // 等级标签
       var levelBg=scoreColor(this.finalScore);
       ctx.fillStyle=levelBg;ctx.globalAlpha=0.15;
-      ctx.beginPath();ctx.roundRect(W/2-60,350,120,36,18);ctx.fill();
-      ctx.globalAlpha=1;ctx.fillStyle=levelBg;ctx.font='bold 18px sans-serif';
-      ctx.fillText(this.reportLevel.label,W/2,375);
+      ctx.beginPath();ctx.roundRect(W/2-70,400,140,40,20);ctx.fill();
+      ctx.globalAlpha=1;ctx.fillStyle=levelBg;ctx.font='bold 22px sans-serif';
+      ctx.fillText(this.reportLevel.label,W/2,428);
       // 标语
       var slogan=this.getSlogan(this.reportData.score);
-      ctx.font='bold 38px sans-serif';ctx.fillStyle='#2d2d2d';
-      ctx.fillText(slogan,W/2,450);
+      ctx.font='bold 46px sans-serif';ctx.fillStyle='#2d2d2d';
+      ctx.fillText(slogan,W/2,510);
       // 分隔线
-      ctx.strokeStyle='#e8e0d4';ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(80,490);ctx.lineTo(W-80,490);ctx.stroke();
-      // 数据区域标题
-      ctx.font='bold 18px sans-serif';ctx.fillStyle='#888';ctx.textAlign='left';
-      ctx.fillText('行程数据',80,530);
+      ctx.strokeStyle='#e8e0d4';ctx.lineWidth=1.5;
+      ctx.beginPath();ctx.moveTo(100,560);ctx.lineTo(W-100,560);ctx.stroke();
       // 数据卡片
       var self=this;
       var cards=[
-        {label:'时长',value:this.fmtTime(this.reportData.duration),unit:''},
-        {label:'距离',value:(this.reportData.distance/1000).toFixed(1),unit:'km'},
-        {label:'事件',value:this.reportData.events.length,unit:'次'}
+        {label:'时长',value:this.fmtTime(this.reportData.duration)},
+        {label:'距离',value:(this.reportData.distance/1000).toFixed(1)+'km'},
+        {label:'事件',value:this.reportData.events.length+'次'}
       ];
       cards.forEach(function(c,i){
-        var x=125+i*250;
+        var x=150+i*300;
         ctx.fillStyle='#f5f0e8';
-        ctx.beginPath();ctx.roundRect(x-60,555,120,80,10);ctx.fill();
-        ctx.font='bold 32px monospace';ctx.fillStyle='#2d2d2d';ctx.textAlign='center';
-        ctx.fillText(c.value,x,600);
-        ctx.font='14px sans-serif';ctx.fillStyle='#999';
-        ctx.fillText(c.unit?c.value+c.unit:c.label,x,600);
-        ctx.font='13px sans-serif';ctx.fillStyle='#aaa';
-        ctx.fillText(c.label,x,625);
+        ctx.beginPath();ctx.roundRect(x-80,590,160,100,12);ctx.fill();
+        ctx.font='bold 40px monospace';ctx.fillStyle='#2d2d2d';ctx.textAlign='center';
+        ctx.fillText(c.value,x,645);
+        ctx.font='18px sans-serif';ctx.fillStyle='#888';
+        ctx.fillText(c.label,x,675);
       });
       // 事件统计标题
       var eventCounts=this.getEventCounts();
       var eventNames=Object.keys(eventCounts);
       if(eventNames.length>0){
-        ctx.font='bold 18px sans-serif';ctx.fillStyle='#888';ctx.textAlign='left';
-        ctx.fillText('事件统计',80,680);
-        // 事件网格
-        var cols=Math.min(eventNames.length,3);
+        ctx.font='bold 22px sans-serif';ctx.fillStyle='#888';ctx.textAlign='left';
+        ctx.fillText('事件统计',100,740);
         eventNames.forEach(function(name,i){
           var col=i%3;var row=Math.floor(i/3);
-          var x=120+col*200;var y=720+row*55;
-          // 背景
+          var x=140+col*250;var y=790+row*70;
           ctx.fillStyle='#f5f0e8';
-          ctx.beginPath();ctx.roundRect(x-50,y-20,160,45,8);ctx.fill();
-          // 名称
-          ctx.font='15px sans-serif';ctx.fillStyle='#555';ctx.textAlign='left';
-          ctx.fillText(name,x-40,y+5);
-          // 次数
-          ctx.font='bold 18px monospace';ctx.fillStyle='#CBA2E6';ctx.textAlign='right';
-          ctx.fillText(eventCounts[name].count+'次',x+100,y+5);
+          ctx.beginPath();ctx.roundRect(x-60,y-25,200,55,10);ctx.fill();
+          ctx.font='20px sans-serif';ctx.fillStyle='#555';ctx.textAlign='left';
+          ctx.fillText(name,x-50,y+8);
+          ctx.font='bold 24px monospace';ctx.fillStyle='#CBA2E6';ctx.textAlign='right';
+          ctx.fillText(eventCounts[name].count+'次',x+130,y+8);
           ctx.textAlign='left';
         });
       }
       // QR码（右下角）
-      var qrUrl=generateQRCode(window.location.href,110);
+      var qrUrl=generateQRCode(window.location.href,140);
       var img=new Image();img.crossOrigin='anonymous';
       img.onload=function(){
         ctx.fillStyle='#fff';
-        ctx.beginPath();ctx.roundRect(W-140,H-170,120,120,8);ctx.fill();
-        ctx.drawImage(img,W-132,H-162,104,104);
-        ctx.fillStyle='#bbb';ctx.font='10px sans-serif';ctx.textAlign='center';
-        ctx.fillText('扫码查看',W-80,H-42);
+        ctx.beginPath();ctx.roundRect(W-180,H-210,160,160,10);ctx.fill();
+        ctx.drawImage(img,W-170,H-200,140,140);
+        ctx.fillStyle='#bbb';ctx.font='12px sans-serif';ctx.textAlign='center';
+        ctx.fillText('扫码查看',W-110,H-50);
       };
       img.src=qrUrl;
-      // 底部品牌
-      ctx.fillStyle='#ccc';ctx.font='10px sans-serif';ctx.textAlign='center';
-      ctx.fillText('晕不晕 · 驾驶舒适度检测',W/2,H-18);
+      // 底部
+      ctx.fillStyle='#ccc';ctx.font='12px sans-serif';ctx.textAlign='center';
+      ctx.fillText('晕不晕 · 驾驶舒适度检测',W/2,H-20);
     },
     downloadPoster:function(){var canvas=this.$refs.posterCanvas;if(!canvas)return;var link=document.createElement('a');link.download='晕不晕报告_'+this.reportData.score+'分.png';link.href=canvas.toDataURL('image/png');link.click()},
     onMotion:function(e){if(!this.recording||this.paused)return;var a=e.acceleration||e.accelerationIncludingGravity;if(!a)return;var ax=a.x||0,ay=a.y||0;if(!this._calibrated){this._gravSamples.push({x:ax,y:ay});if(this._gravSamples.length>=15){var gx=0,gy=0;for(var i=0;i<this._gravSamples.length;i++){gx+=this._gravSamples[i].x;gy+=this._gravSamples[i].y}this._gx=gx/15;this._gy=gy/15;this._calibrated=true;this._gravSamples=[]}return}ax-=this._gx;ay-=this._gy;var fx=Math.abs(ax)<.3?0:ax;var fy=Math.abs(ay)<.3?0:ay;var p=PROFILES[this.sensitivity];this._accelH.push({x:fx,y:fy,t:Date.now()});if(this._accelH.length>200)this._accelH=this._accelH.slice(-200);var bl=classifyAccel(-fy,p.b);if(bl>0)this.addEvt('急减速',bl,1.5);var al=classifyAccel(fy,p.a);if(al>0)this.addEvt('急加速',al,.75);var tl=classifyAccel(fx,p.t);if(tl>0)this.addEvt('急转向',tl,.8)},
