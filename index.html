@@ -139,9 +139,24 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
       </div>
     </div>
     <div style="height:20px"></div>
-    <!-- Fixed bottom button -->
-    <div style="position:fixed;bottom:0;left:0;right:0;padding:16px 20px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--bg);z-index:25">
-      <button @click="page='home'" style="width:100%;padding:14px;border-radius:28px;border:none;background:var(--accent);color:#000;font-size:16px;font-weight:600;cursor:pointer">返回首页</button>
+    <!-- Fixed bottom buttons -->
+    <div style="position:fixed;bottom:0;left:0;right:0;padding:16px 20px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--bg);z-index:25;display:flex;gap:12px">
+      <button @click="page='home'" style="flex:1;padding:14px;border-radius:28px;border:none;background:var(--accent);color:#000;font-size:16px;font-weight:600;cursor:pointer">返回首页</button>
+      <button @click="shareReport" style="padding:14px 20px;border-radius:28px;border:2px solid var(--accent);background:transparent;color:var(--accent);font-size:16px;font-weight:600;cursor:pointer">📤 分享</button>
+    </div>
+  </div>
+
+  <!-- SHARE POSTER MODAL -->
+  <div v-if="showPoster" style="position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#fff;border-radius:20px;padding:24px;max-width:360px;width:100%;max-height:80vh;overflow-y:auto">
+      <div style="text-align:center;margin-bottom:16px">
+        <div style="font-size:14px;color:#666;margin-bottom:8px">分享海报</div>
+      </div>
+      <canvas ref="posterCanvas" width="640" height="960" style="width:100%;border-radius:12px"></canvas>
+      <div style="display:flex;gap:12px;margin-top:16px">
+        <button @click="downloadPoster" style="flex:1;padding:12px;border-radius:12px;border:none;background:#CBA2E6;color:#000;font-size:14px;font-weight:600;cursor:pointer">💾 保存图片</button>
+        <button @click="showPoster=false" style="flex:1;padding:12px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#333;font-size:14px;font-weight:600;cursor:pointer">关闭</button>
+      </div>
     </div>
   </div>
 
@@ -196,6 +211,31 @@ var DEDUCT_TABLE=[
   {level:10,name:'极端',ded:7.5}
 ];
 
+// 搞怪标语
+var SLOGANS={
+  100:['完美！你是漂移之神！','铁定没有晕车的命','这车开得比奶茶还丝滑'],
+  95:['稳如老狗，咖啡一滴不洒','乘客：再来一圈！','秋名山车神认证通过'],
+  90:['优秀！乘客表示很舒服','这脚法，可以去开赛车了','平稳得让人想睡觉'],
+  85:['不错不错，基本功扎实','乘客：还可以接受','离秋名山车神只差一步'],
+  80:['还行吧，小瑕疵不影响大局','乘客：嗯...还行','偶尔浪一下也很正常'],
+  75:['有点颠，但问题不大','乘客：系好安全带了','建议多练练刹车脚法'],
+  70:['开始有点晕了...','乘客：我要吐了...','减速！减速！'],
+  65:['晕车预警！','乘客：求你慢点','这车开得像过山车'],
+  60:['危险！乘客已经在找塑料袋了','刹车踩得像开关','建议改坐地铁'],
+  50:['重灾区！乘客已投降','这驾驶技术需要回炉重造','晕车界的天花板'],
+  40:['紧急警报！乘客已晕厥','开车像在蹦迪','建议把车卖了'],
+  30:['史诗级灾难！','这不是开车，这是驯兽','乘客：我要下车！！！'],
+  20:['传说中的夺命连环弯？','开出了海盗船的感觉','建议原地停车'],
+  10:['地狱级体验','乘客：我选择走路','这车有这么难开吗'],
+  0:['零分！破纪录了！','你是不是在故意整人','建议把驾照交出来']
+};
+
+// QR码生成（简易版，使用第三方API）
+function generateQRCode(text,size){
+  var url='https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size+'&data='+encodeURIComponent(text);
+  return url;
+}
+
 function classifyAccel(val,thresholds){
   var g=Math.abs(val)/9.8;
   if(g>=thresholds[3])return 10;
@@ -225,7 +265,8 @@ Vue.createApp({
     showNormal:true,alertMsg:'',permLoading:false,
     recording:false,paused:false,score:100,elapsed:0,dist:0,events:[],
     showReport:false,reportData:{events:[],duration:0,distance:0,score:0,startTime:'',endTime:''},
-    showHist:false,history:[]
+    showHist:false,history:[],
+    showPoster:false
   }},
   computed:{
     themeIcon:function(){return this.themeMode==='auto'?'A':this.themeMode==='dark'?'🌙':'☀️'},
@@ -334,6 +375,98 @@ Vue.createApp({
       this.page='history';
     },
     viewReport:function(r){this.reportData=r;this.page='report'},
+    getSlogan:function(score){
+      var keys=Object.keys(SLOGANS).map(Number).sort(function(a,b){return b-a});
+      for(var i=0;i<keys.length;i++){if(score>=keys[i])return SLOGANS[keys[i]][Math.floor(Math.random()*SLOGANS[keys[i]].length)]}
+      return SLOGANS[0][0];
+    },
+    shareReport:function(){
+      this.showPoster=true;
+      var self=this;
+      this.$nextTick(function(){self.generatePoster()});
+    },
+    generatePoster:function(){
+      var canvas=this.$refs.posterCanvas;
+      if(!canvas)return;
+      var ctx=canvas.getContext('2d');
+      var W=640,H=960;
+      // 背景
+      var grad=ctx.createLinearGradient(0,0,0,H);
+      grad.addColorStop(0,'#1a1a2e');
+      grad.addColorStop(0.5,'#16213e');
+      grad.addColorStop(1,'#0f3460');
+      ctx.fillStyle=grad;
+      ctx.fillRect(0,0,W,H);
+      // 装饰圆
+      ctx.beginPath();ctx.arc(W-80,80,120,0,Math.PI*2);ctx.fillStyle='rgba(203,162,230,.1)';ctx.fill();
+      ctx.beginPath();ctx.arc(60,H-100,80,0,Math.PI*2);ctx.fillStyle='rgba(203,162,230,.08)';ctx.fill();
+      // 标题
+      ctx.fillStyle='#fff';ctx.font='bold 36px sans-serif';ctx.textAlign='center';
+      ctx.fillText('🚗 晕不晕 · 驾驶报告',W/2,80);
+      // 分数
+      ctx.font='bold 120px monospace';ctx.fillStyle='#CBA2E6';
+      ctx.fillText(this.reportData.score,W/2,240);
+      // 等级
+      ctx.font='bold 28px sans-serif';ctx.fillStyle='#fff';
+      ctx.fillText(this.reportLevel.icon+' '+this.reportLevel.label,W/2,290);
+      // 标语
+      var slogan=this.getSlogan(this.reportData.score);
+      ctx.font='20px sans-serif';ctx.fillStyle='rgba(255,255,255,.7)';
+      ctx.fillText(slogan,W/2,330);
+      // 分隔线
+      ctx.strokeStyle='rgba(203,162,230,.3)';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(80,370);ctx.lineTo(W-80,370);ctx.stroke();
+      // 数据卡片
+      var cards=[
+        {label:'事件数',value:this.reportData.events.length+''},
+        {label:'时长',value:this.fmtTime(this.reportData.duration)},
+        {label:'距离',value:(this.reportData.distance/1000).toFixed(1)+'km'}
+      ];
+      ctx.textAlign='center';
+      cards.forEach(function(c,i){
+        var x=120+i*200;
+        ctx.fillStyle='rgba(255,255,255,.1)';
+        ctx.beginPath();ctx.roundRect(x-60,400,120,80,12);ctx.fill();
+        ctx.fillStyle='#CBA2E6';ctx.font='bold 28px monospace';
+        ctx.fillText(c.value,x,445);
+        ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='14px sans-serif';
+        ctx.fillText(c.label,x,470);
+      });
+      // 事件列表
+      ctx.textAlign='left';ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='16px sans-serif';
+      ctx.fillText('事件详情',80,540);
+      var self=this;
+      this.reportData.events.slice(0,5).forEach(function(ev,i){
+        var y=580+i*40;
+        ctx.fillStyle='rgba(255,255,255,.8)';ctx.font='16px sans-serif';
+        ctx.fillText(ev.name+' ('+ev.levelName+')',80,y);
+        ctx.fillStyle='#ff9800';ctx.textAlign='right';
+        ctx.fillText('-'+ev.ded.toFixed(1)+'分',W-80,y);
+        ctx.textAlign='left';
+      });
+      // QR码
+      var qrUrl=generateQRCode(window.location.href,160);
+      var img=new Image();
+      img.crossOrigin='anonymous';
+      img.onload=function(){
+        ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(W/2-90,720,180,180,12);ctx.fill();
+        ctx.drawImage(img,W/2-80,730,160,160);
+        ctx.fillStyle='rgba(255,255,255,.5)';ctx.font='12px sans-serif';ctx.textAlign='center';
+        ctx.fillText('扫码查看报告',W/2,920);
+      };
+      img.src=qrUrl;
+      // 底部
+      ctx.fillStyle='rgba(255,255,255,.3)';ctx.font='12px sans-serif';ctx.textAlign='center';
+      ctx.fillText('晕不晕 · 驾驶舒适度检测',W/2,H-30);
+    },
+    downloadPoster:function(){
+      var canvas=this.$refs.posterCanvas;
+      if(!canvas)return;
+      var link=document.createElement('a');
+      link.download='晕不晕报告_'+this.reportData.score+'分.png';
+      link.href=canvas.toDataURL('image/png');
+      link.click();
+    },
     onMotion:function(e){
       if(!this.recording||this.paused)return;
       var a=e.acceleration||e.accelerationIncludingGravity;if(!a)return;
