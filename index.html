@@ -13,7 +13,7 @@
 html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;transition:background .3s,color .3s}
 #app{width:100%;height:100%}
 .img-fade{transition:opacity .4s}
-.score-progress{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0;background:var(--accent);transition:opacity .8s}
+.score-progress{position:fixed;left:0;right:0;bottom:0;z-index:0;background:var(--accent);transition:height .8s}
 .recording-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:60px 20px 40px}
 </style>
 </head>
@@ -65,10 +65,10 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
     <div class="score-progress" :style="scoreBg"></div>
     <div class="recording-content">
       <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 16px;padding-top:env(safe-area-inset-top,0px)">
-        <span style="font-size:14px;font-weight:600;color:var(--text)">{{paused?'已暂停':'检测中'}}</span>
+        <span style="font-size:14px;font-weight:600;color:#000">{{paused?'已暂停':'检测中'}}</span>
         <div style="display:flex;gap:10px">
-          <button @click="togglePause" :style="{padding:'10px 20px',borderRadius:'16px',background:paused?'var(--accent)':'rgba(0,0,0,.3)',border:paused?'none':'1px solid rgba(255,255,255,.2)',color:paused?'#000':'#fff',fontSize:'14px',fontWeight:'600',cursor:'pointer',backdropFilter:'blur(10px)'}">{{paused?'▶ 继续':'⏸ 暂停'}}</button>
-          <button @click="stop" style="padding:10px 24px;border-radius:16px;background:rgba(255,23,68,.9);border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer;backdrop-filter:blur(10px)">结束</button>
+          <button @click="togglePause" :style="{padding:'10px 20px',borderRadius:'16px',background:paused?'#000':'rgba(0,0,0,.15)',border:paused?'none':'1px solid rgba(0,0,0,.2)',color:paused?'#CBA2E6':'#000',fontSize:'14px',fontWeight:'600',cursor:'pointer'}">{{paused?'▶ 继续':'⏸ 暂停'}}</button>
+          <button @click="stop" style="padding:10px 24px;border-radius:16px;background:#ff1744;border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer">结束</button>
         </div>
       </div>
       <!-- Pause overlay -->
@@ -79,20 +79,20 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
       </div>
       <!-- Score -->
       <div style="text-align:center;margin-top:auto;margin-bottom:auto">
-        <div style="font-size:120px;font-weight:100;font-family:monospace;line-height:1;color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.3)">{{score}}</div>
-        <div style="font-size:16px;color:rgba(255,255,255,.8);margin-top:8px">舒适度</div>
+        <div style="font-size:120px;font-weight:100;font-family:monospace;line-height:1;color:#000">{{score}}</div>
+        <div style="font-size:16px;color:rgba(0,0,0,.6);margin-top:8px">舒适度</div>
       </div>
       <!-- Stats -->
       <div style="display:flex;gap:36px;margin-top:32px">
-        <div style="text-align:center"><div style="font-size:22px;font-weight:700;font-family:monospace;color:#fff">{{fmtTime(elapsed)}}</div><div style="font-size:11px;color:rgba(255,255,255,.7)">时长</div></div>
-        <div style="text-align:center"><div style="font-size:22px;font-weight:700;font-family:monospace;color:#fff">{{(dist/1000).toFixed(2)}}</div><div style="font-size:11px;color:rgba(255,255,255,.7)">公里</div></div>
-        <div style="text-align:center"><div style="font-size:22px;font-weight:700;font-family:monospace;color:#fff">{{events.length}}</div><div style="font-size:11px;color:rgba(255,255,255,.7)">事件</div></div>
+        <div style="text-align:center"><div style="font-size:22px;font-weight:700;font-family:monospace;color:#000">{{fmtTime(elapsed)}}</div><div style="font-size:11px;color:rgba(0,0,0,.5)">时长</div></div>
+        <div style="text-align:center"><div style="font-size:22px;font-weight:700;font-family:monospace;color:#000">{{(dist/1000).toFixed(2)}}</div><div style="font-size:11px;color:rgba(0,0,0,.5)">公里</div></div>
+        <div style="text-align:center"><div style="font-size:22px;font-weight:700;font-family:monospace;color:#000">{{events.length}}</div><div style="font-size:11px;color:rgba(0,0,0,.5)">事件</div></div>
       </div>
       <!-- Events -->
       <div v-if="events.length>0" style="margin-top:24px;width:100%;max-height:160px;overflow-y:auto;padding:0 8px">
-        <div v-for="(ev,i) in events.slice(0,6)" :key="i" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.15)">
-          <span style="font-size:14px;color:#fff">{{ev.name}} <span :style="{color:ev.level===1?'#90EE90':ev.level===2?'#FFD700':'#FF6B6B'}">({{ev.levelName}})</span></span>
-          <span style="font-size:13px;color:rgba(255,255,255,.7)">-{{ev.ded.toFixed(1)}}分</span>
+        <div v-for="(ev,i) in events.slice(0,6)" :key="i" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(0,0,0,.1)">
+          <span style="font-size:14px;color:#000">{{ev.name}} <span :style="{color:ev.level<=3?'#2e7d32':ev.level<=6?'#e65100':'#c62828'}">({{ev.levelName}})</span></span>
+          <span style="font-size:13px;color:rgba(0,0,0,.5)">-{{ev.ded.toFixed(1)}}分</span>
         </div>
       </div>
     </div>
@@ -203,8 +203,8 @@ Vue.createApp({
   computed:{
     themeIcon:function(){return this.themeMode==='auto'?'A':this.themeMode==='dark'?'🌙':'☀️'},
     scoreBg:function(){
-      if(this.score<=0)return'opacity:0';
-      return'opacity:'+(this.score/100*.35);
+      if(this.score<=0)return'height:0%';
+      return'height:'+Math.max(5,this.score)+'%';
     },
     reportLevel:function(){var s=this.reportData.score;if(s>=95)return{label:'无感',desc:'完全没有晕车感',c:'#00c853',icon:'😊'};if(s>=88)return{label:'轻微',desc:'几乎感觉不到不适',c:'#4caf50',icon:'🙂'};if(s>=78)return{label:'一般',desc:'略有不适但可接受',c:'#8bc34a',icon:'😐'};if(s>=65)return{label:'小晕',desc:'开始出现晕车症状',c:'#ff9800',icon:'😕'};if(s>=50)return{label:'晕',desc:'明显晕车不适',c:'#ff5722',icon:'😣'};if(s>=30)return{label:'严重',desc:'严重晕车',c:'#f44336',icon:'🤮'};return{label:'非常严重',desc:'极度不适',c:'#b71c1c',icon:'💀'}}
   },
