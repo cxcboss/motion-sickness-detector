@@ -13,7 +13,7 @@
 html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;transition:background .3s,color .3s}
 #app{width:100%;height:100%}
 .img-fade{transition:opacity .4s}
-.score-progress{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0;transition:background .8s}
+.score-progress{position:fixed;top:0;left:0;right:0;bottom:0;z-index:0;background:var(--accent);transition:opacity .8s}
 .recording-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:60px 20px 40px}
 </style>
 </head>
@@ -62,7 +62,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 
   <!-- RECORDING - Full screen progress -->
   <div v-if="page==='recording'" style="position:fixed;inset:0;z-index:20">
-    <div class="score-progress" :style="{background:scoreBg}"></div>
+    <div class="score-progress" :style="scoreBg"></div>
     <div class="recording-content">
       <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 16px;padding-top:env(safe-area-inset-top,0px)">
         <span style="font-size:14px;font-weight:600;color:var(--text)">{{paused?'已暂停':'检测中'}}</span>
@@ -79,7 +79,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
       </div>
       <!-- Score -->
       <div style="text-align:center;margin-top:auto;margin-bottom:auto">
-        <div style="font-size:120px;font-weight:100;font-family:monospace;line-height:1;color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.3)">{{score}}</div>
+        <div style="font-size:160px;font-weight:100;font-family:monospace;line-height:1;color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.3)">{{score}}</div>
         <div style="font-size:16px;color:rgba(255,255,255,.8);margin-top:8px">舒适度</div>
       </div>
       <!-- Stats -->
@@ -173,10 +173,8 @@ Vue.createApp({
   computed:{
     themeIcon:function(){return this.themeMode==='auto'?'A':this.themeMode==='dark'?'🌙':'☀️'},
     scoreBg:function(){
-      if(this.score>=90)return 'linear-gradient(180deg, rgba(0,200,83,0.3) 0%, rgba(0,200,83,0.05) '+Math.max(0,this.score)+'%, transparent '+Math.max(0,this.score)+'%)';
-      if(this.score>=60)return 'linear-gradient(180deg, rgba(255,152,0,0.35) 0%, rgba(255,152,0,0.05) '+Math.max(0,this.score)+'%, transparent '+Math.max(0,this.score)+'%)';
-      if(this.score>=0)return 'linear-gradient(180deg, rgba(255,23,68,0.4) 0%, rgba(255,23,68,0.05) '+this.score+'%, transparent '+this.score+'%)';
-      return 'transparent';
+      if(this.score<=0)return'opacity:0';
+      return'opacity:'+(this.score/100*.35);
     },
     reportLevel:function(){var s=this.reportData.score;if(s>=95)return{label:'无感',desc:'完全没有晕车感',c:'#00c853',icon:'😊'};if(s>=88)return{label:'轻微',desc:'几乎感觉不到不适',c:'#4caf50',icon:'🙂'};if(s>=78)return{label:'一般',desc:'略有不适但可接受',c:'#8bc34a',icon:'😐'};if(s>=65)return{label:'小晕',desc:'开始出现晕车症状',c:'#ff9800',icon:'😕'};if(s>=50)return{label:'晕',desc:'明显晕车不适',c:'#ff5722',icon:'😣'};if(s>=30)return{label:'严重',desc:'严重晕车',c:'#f44336',icon:'🤮'};return{label:'非常严重',desc:'极度不适',c:'#b71c1c',icon:'💀'}}
   },
@@ -197,7 +195,7 @@ Vue.createApp({
     saveS:function(){try{localStorage.setItem('sens',this.sensitivity)}catch(e){}},
     start:function(){
       var self=this;
-      self.page='recording';self.paused=false;self.score=100;self.elapsed=0;self.dist=0;self.events=[];
+      self.page='recording';self.recording=true;self.paused=false;self.score=100;self.elapsed=0;self.dist=0;self.events=[];
       self._totalDed=0;self._recent=[];self._accelH=[];self._gravSamples=[];self._calibrated=false;
       self._gx=0;self._gy=0;
       self._gpsPath=[];self._evtLocations=[];self._lastGPS=null;self._startTime=Date.now();
