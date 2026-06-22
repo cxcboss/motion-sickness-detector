@@ -8,13 +8,11 @@
 *{margin:0;padding:0;box-sizing:border-box}
 [v-cloak]{display:none !important}
 :root{--bg:#000;--bg2:#111;--card:rgba(255,255,255,.08);--cb:rgba(255,255,255,.12);--text:#fff;--ts:rgba(255,255,255,.7);--td:rgba(255,255,255,.4);--accent:#CBA2E6}
-[data-theme="dark"]{--bg:#000;--bg2:#111;--card:rgba(255,255,255,.08);--cb:rgba(255,255,255,.12);--text:#fff;--ts:rgba(255,255,255,.7);--td:rgba(255,255,255,.4)}
-[data-theme="light"]{--bg:#f5f5f5;--bg2:#fff;--card:rgba(0,0,0,.04);--cb:rgba(0,0,0,.1);--text:#1a1a1a;--ts:rgba(0,0,0,.6);--td:rgba(0,0,0,.35)}
+@media(prefers-color-scheme:dark){:root{--bg:#000;--bg2:#111;--card:rgba(255,255,255,.08);--cb:rgba(255,255,255,.12);--text:#fff;--ts:rgba(255,255,255,.7);--td:rgba(255,255,255,.4)}}
+@media(prefers-color-scheme:light){:root{--bg:#f5f5f5;--bg2:#fff;--card:rgba(0,0,0,.04);--cb:rgba(0,0,0,.1);--text:#1a1a1a;--ts:rgba(0,0,0,.6);--td:rgba(0,0,0,.35)}}
 html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;transition:background .3s,color .3s}
 #app{width:100%;height:100%}
 .img-fade{transition:opacity .4s}
-.score-progress{position:fixed;left:0;right:0;bottom:0;z-index:0;background:var(--accent);transition:height .8s}
-.recording-content{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:60px 20px 40px}
 </style>
 </head>
 <body>
@@ -29,19 +27,18 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
     <button style="padding:14px 52px;border-radius:28px;border:none;background:var(--accent);color:#000;font-size:16px;font-weight:600;cursor:pointer" @click="start">
       {{permLoading?'请求权限中...':sensorsReady?'开始测评':'授权传感器'}}
     </button>
-    <div style="margin-top:40px;display:flex;gap:32px">
+    <div style="margin-top:48px;display:flex;gap:48px">
       <div style="text-align:center;cursor:pointer" @click="sensVisible=!sensVisible">
-        <div style="width:48px;height:48px;border-radius:50%;background:var(--card);border:1px solid var(--cb);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:20px">⚙️</div>
-        <span style="font-size:11px;color:var(--ts)">灵敏度</span>
-      </div>
-      <div style="text-align:center;cursor:pointer" @click="cycleTheme">
-        <div style="width:48px;height:48px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:16px;color:#000;font-weight:700">{{themeIcon}}</div>
-        <span style="font-size:11px;color:var(--ts)">主题</span>
+        <img :src="theme==='dark'?'设置-深色.svg':'设置-浅色.svg'" style="width:48px;height:48px" alt="设置">
+        <div style="font-size:12px;color:var(--ts);margin-top:6px">设置</div>
       </div>
       <div style="text-align:center;cursor:pointer" @click="showHistory">
-        <div style="width:48px;height:48px;border-radius:50%;background:var(--card);border:1px solid var(--cb);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:20px">📊</div>
-        <span style="font-size:11px;color:var(--ts)">历史</span>
+        <img :src="theme==='dark'?'历史-深色.svg':'历史-浅色.svg'" style="width:48px;height:48px" alt="历史">
+        <div style="font-size:12px;color:var(--ts);margin-top:6px">历史</div>
       </div>
+    </div>
+    <div style="position:fixed;bottom:24px;left:0;right:0;text-align:center">
+      <span @click="showAbout=true" style="font-size:12px;color:var(--td);cursor:pointer;text-decoration:underline">关于</span>
     </div>
     <div v-if="sensVisible" @click="sensVisible=false" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10"></div>
     <div v-if="sensVisible" style="position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--cb);padding:24px 20px;border-radius:20px 20px 0 0;z-index:11">
@@ -52,29 +49,25 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
           {{lv==='mild'?'轻度':lv==='moderate'?'中度':'重度'}}
         </div>
       </div>
-      <div style="margin-top:14px;padding:12px;background:var(--card);border-radius:12px;font-size:12px;color:var(--ts);line-height:1.6">
-        <template v-if="sensitivity==='mild'">只检测明显不良事件，适合日常驾驶</template>
-        <template v-else-if="sensitivity==='moderate'">平衡灵敏度与准确性，推荐使用</template>
-        <template v-else>加减速/顿挫/摇摆参数加强，检测最严格</template>
-      </div>
     </div>
   </div>
 
   <!-- RECORDING -->
   <div v-if="page==='recording'" :style="{position:'fixed',inset:0,zIndex:20,background:theme==='dark'?'#000':'#fff'}">
-    <!-- Accent color progress from bottom -->
     <div :style="{position:'absolute',left:0,right:0,bottom:0,background:'var(--accent)',transition:'height .8s',height:score>0?Math.max(3,score)+'%':'0%',zIndex:0}"></div>
-    <!-- Content layer -->
     <div :style="{position:'absolute',inset:0,display:'flex',flexDirection:'column',padding:'60px 20px 40px',zIndex:1,color:theme==='dark'?'#fff':'#000'}">
       <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 16px">
         <span style="font-size:14px;font-weight:600">{{paused?'已暂停':'检测中'}}</span>
         <div style="display:flex;gap:10px">
-          <button @click="togglePause" :style="{padding:'10px 20px',borderRadius:'16px',background:paused?(theme==='dark'?'#000':'#fff'):(theme==='dark'?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)'),border:paused?'none':('1px solid '+(theme==='dark'?'rgba(255,255,255,.2)':'rgba(0,0,0,.15)')),color:paused?'var(--accent)':(theme==='dark'?'#fff':'#000'),fontSize:'14px',fontWeight:'600',cursor:'pointer'}">{{paused?'▶ 继续':'⏸ 暂停'}}</button>
+          <button @click="togglePause" :style="{padding:'10px 20px',borderRadius:'16px',background:paused?(theme==='dark'?'#000':'#fff'):(theme==='dark'?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)'),border:paused?'none':('1px solid '+(theme==='dark'?'rgba(255,255,255,.2)':'rgba(0,0,0,.15)')),color:paused?'var(--accent)':(theme==='dark'?'#fff':'#000'),fontSize:'14px',fontWeight:'600',cursor:'pointer'}">{{paused?'继续':'暂停'}}</button>
           <button @click="stop" style="padding:10px 24px;border-radius:16px;background:#ff1744;border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer">结束</button>
         </div>
       </div>
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%">
-        <div style="font-size:120px;font-weight:100;font-family:monospace;line-height:1">{{score}}</div>
+        <div style="display:flex;align-items:baseline">
+          <span style="font-size:120px;font-weight:100;font-family:monospace;line-height:1">{{scoreInt}}</span>
+          <span style="font-size:40px;font-weight:100;font-family:monospace;line-height:1">.{{scoreDec}}</span>
+        </div>
         <div style="font-size:16px;margin-top:8px;opacity:.7">舒适度</div>
         <div style="display:flex;gap:36px;margin-top:32px">
           <div style="text-align:center"><div style="font-size:22px;font-weight:700;font-family:monospace">{{fmtTime(elapsed)}}</div><div style="font-size:11px;opacity:.6">时长</div></div>
@@ -89,21 +82,38 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
         </div>
       </div>
     </div>
-    <!-- Pause overlay -->
     <div v-if="paused" style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px">
       <div style="font-size:56px;font-weight:300;color:#fff;letter-spacing:10px">已暂停</div>
-      <button @click="togglePause" style="padding:20px 64px;border-radius:32px;background:#CBA2E6;border:none;color:#000;font-size:22px;font-weight:600;cursor:pointer">▶ 继续检测</button>
+      <button @click="togglePause" style="padding:20px 64px;border-radius:32px;background:#CBA2E6;border:none;color:#000;font-size:22px;font-weight:600;cursor:pointer">继续检测</button>
       <button @click="stop" style="padding:14px 40px;border-radius:24px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:15px;cursor:pointer">结束检测</button>
     </div>
   </div>
 
   <!-- REPORT -->
   <div v-if="page==='report'" style="position:fixed;inset:0;background:var(--bg);z-index:20;overflow-y:auto;padding:20px 16px;padding-bottom:80px;padding-top:calc(20px + env(safe-area-inset-top,0px))">
-    <div style="text-align:center;padding:20px 0">
-      <div style="font-size:80px;font-weight:100;font-family:monospace;color:var(--text)">{{reportData.score}}</div>
-      <div style="font-size:24px;margin-top:8px">{{reportLevel.icon}}</div>
-      <div style="font-size:20px;font-weight:600;margin-top:4px" :style="{color:reportLevel.c}">{{reportLevel.label}}</div>
-      <div style="font-size:14px;color:var(--ts);margin-top:4px">{{reportLevel.desc}}</div>
+    <div style="text-align:center;padding:10px 0">
+      <div style="display:flex;align-items:baseline;justify-content:center">
+        <span style="font-size:72px;font-weight:100;font-family:monospace;color:var(--text)">{{scoreInt}}</span>
+        <span style="font-size:24px;font-weight:100;font-family:monospace;color:var(--text)">.{{scoreDec}}</span>
+      </div>
+      <div style="font-size:22px;margin-top:4px">{{reportLevel.icon}}</div>
+      <div style="font-size:18px;font-weight:600;margin-top:4px" :style="{color:reportLevel.c}">{{reportLevel.label}}</div>
+      <div style="font-size:13px;color:var(--ts);margin-top:4px">{{reportLevel.desc}}</div>
+    </div>
+    <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
+      <div style="font-size:16px;font-weight:600;margin-bottom:10px;color:var(--text)">综合评分</div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cb)">
+        <span style="font-size:14px;color:var(--ts)">基础评分</span>
+        <span style="font-size:14px;color:var(--text)">{{reportData.score}}分</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cb)">
+        <span style="font-size:14px;color:var(--ts)">距离系数</span>
+        <span style="font-size:14px;color:var(--text)">{{densityInfo.factor}}</span>
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0">
+        <span style="font-size:14px;color:var(--ts)">综合评分</span>
+        <span style="font-size:16px;font-weight:700;color:var(--accent)">{{finalScore}}分</span>
+      </div>
     </div>
     <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
       <div style="display:flex;justify-content:space-around;text-align:center">
@@ -116,21 +126,6 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
       <div style="font-size:14px;color:var(--ts)">开始时间：{{reportData.startTime}}</div>
       <div style="font-size:14px;color:var(--ts);margin-top:6px">结束时间：{{reportData.endTime}}</div>
     </div>
-    <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
-      <div style="font-size:16px;font-weight:600;margin-bottom:10px;color:var(--text)">距离密度评估</div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cb)">
-        <span style="font-size:14px;color:var(--ts)">事件密度</span>
-        <span style="font-size:14px;color:var(--text)">{{densityInfo.density}} 次/km</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cb)">
-        <span style="font-size:14px;color:var(--ts)">扣分系数</span>
-        <span style="font-size:14px;color:var(--text)">{{densityInfo.factor}}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0">
-        <span style="font-size:14px;color:var(--ts)">评估结果</span>
-        <span style="font-size:14px;color:var(--text)">{{densityInfo.level}}</span>
-      </div>
-    </div>
     <div v-if="reportData.events.length>0" style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
       <div style="font-size:16px;font-weight:600;margin-bottom:12px;color:var(--text)">事件详情</div>
       <div v-for="(ev,i) in reportData.events" :key="i" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--cb)">
@@ -139,24 +134,9 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
       </div>
     </div>
     <div style="height:20px"></div>
-    <!-- Fixed bottom buttons -->
     <div style="position:fixed;bottom:0;left:0;right:0;padding:16px 20px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--bg);z-index:25;display:flex;gap:12px">
       <button @click="page='home'" style="flex:1;padding:14px;border-radius:28px;border:none;background:var(--accent);color:#000;font-size:16px;font-weight:600;cursor:pointer">返回首页</button>
-      <button @click="shareReport" style="padding:14px 20px;border-radius:28px;border:2px solid var(--accent);background:transparent;color:var(--accent);font-size:16px;font-weight:600;cursor:pointer">📤 分享</button>
-    </div>
-  </div>
-
-  <!-- SHARE POSTER MODAL -->
-  <div v-if="showPoster" style="position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px">
-    <div style="background:#fff;border-radius:20px;padding:24px;max-width:360px;width:100%;max-height:80vh;overflow-y:auto">
-      <div style="text-align:center;margin-bottom:16px">
-        <div style="font-size:14px;color:#666;margin-bottom:8px">分享海报</div>
-      </div>
-      <canvas ref="posterCanvas" width="640" height="960" style="width:100%;border-radius:12px"></canvas>
-      <div style="display:flex;gap:12px;margin-top:16px">
-        <button @click="downloadPoster" style="flex:1;padding:12px;border-radius:12px;border:none;background:#CBA2E6;color:#000;font-size:14px;font-weight:600;cursor:pointer">💾 保存图片</button>
-        <button @click="showPoster=false" style="flex:1;padding:12px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#333;font-size:14px;font-weight:600;cursor:pointer">关闭</button>
-      </div>
+      <button @click="shareReport" style="padding:14px 20px;border-radius:28px;border:2px solid var(--accent);background:transparent;color:var(--accent);font-size:16px;font-weight:600;cursor:pointer">分享</button>
     </div>
   </div>
 
@@ -184,6 +164,47 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
     <div style="height:40px"></div>
   </div>
 
+  <!-- ABOUT -->
+  <div v-if="showAbout" style="position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px">
+    <div @click.stop style="background:var(--bg2);border:1px solid var(--cb);border-radius:20px;padding:24px;max-width:360px;width:100%;max-height:80vh;overflow-y:auto">
+      <div style="font-size:18px;font-weight:600;margin-bottom:16px;color:var(--text);text-align:center">关于晕不晕</div>
+      <div style="font-size:13px;color:var(--ts);line-height:1.8">
+        <p style="margin-bottom:12px"><strong style="color:var(--text)">使用说明</strong></p>
+        <p>1. 将手机平放在车内仪表台或充电位</p>
+        <p>2. 点击"开始测评"后保持手机静止</p>
+        <p>3. 系统会自动检测急加速、急减速、急转向等驾驶行为</p>
+        <p style="margin-bottom:12px">4. 检测完成后查看评分报告</p>
+        <p style="margin-bottom:12px"><strong style="color:var(--text)">评分标准</strong></p>
+        <p>• 95-100分：无感，完全没有晕车感</p>
+        <p>• 88-94分：轻微，几乎感觉不到不适</p>
+        <p>• 78-87分：一般，略有不适但可接受</p>
+        <p>• 65-77分：小晕，开始出现晕车症状</p>
+        <p>• 50-64分：晕，明显晕车不适</p>
+        <p>• 30-49分：严重，严重晕车</p>
+        <p style="margin-bottom:12px">• 30分以下：非常严重，极度不适</p>
+        <p style="margin-bottom:12px"><strong style="color:var(--text)">安全提示</strong></p>
+        <p>• 驾驶时请时刻关注路况，安全第一</p>
+        <p>• 本工具仅供娱乐参考，不作为专业评价依据</p>
+        <p>• 一切以真实驾驶安全为准</p>
+        <p style="margin-top:12px;padding-top:12px;border-top:1px solid var(--cb);font-size:12px;color:var(--td)">
+          本项目灵感来源于小鹏汽车"洒了么"辅助驾驶舒适度评测工具，仅作为学习交流使用。
+        </p>
+      </div>
+      <button @click="showAbout=false" style="width:100%;margin-top:16px;padding:12px;border-radius:16px;border:none;background:var(--accent);color:#000;font-size:14px;font-weight:600;cursor:pointer">我知道了</button>
+    </div>
+  </div>
+
+  <!-- SHARE POSTER -->
+  <div v-if="showPoster" style="position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px">
+    <div style="background:#fff;border-radius:20px;padding:20px;max-width:360px;width:100%;max-height:85vh;overflow-y:auto">
+      <canvas ref="posterCanvas" width="640" height="960" style="width:100%;border-radius:12px"></canvas>
+      <div style="display:flex;gap:12px;margin-top:16px">
+        <button @click="downloadPoster" style="flex:1;padding:12px;border-radius:12px;border:none;background:#CBA2E6;color:#000;font-size:14px;font-weight:600;cursor:pointer">保存图片</button>
+        <button @click="showPoster=false" style="flex:1;padding:12px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#333;font-size:14px;font-weight:600;cursor:pointer">关闭</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ALERT -->
   <div v-if="alertMsg" @click="alertMsg=''" style="position:fixed;inset:0;z-index:100;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.5)">
     <div @click.stop style="background:var(--bg2);border:1px solid var(--cb);border-radius:16px;padding:24px;max-width:280px;text-align:center">
@@ -196,340 +217,40 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
 <script>
 var PROFILES={mild:{b:{1:.27,2:.36,3:.46},a:{1:.26,2:.35,3:.44},t:{1:.27,2:.37,3:.47}},moderate:{b:{1:.226,2:.305,3:.386},a:{1:.214,2:.242,3:.317},t:{1:.225,2:.311,3:.395}},severe:{b:{1:.16,2:.22,3:.30},a:{1:.15,2:.20,3:.27},t:{1:.16,2:.22,3:.30}}};
+var DEDUCT_TABLE=[{level:1,name:'微弱',ded:0.1},{level:2,name:'轻微',ded:0.3},{level:3,name:'轻度',ded:0.6},{level:4,name:'一般',ded:1.0},{level:5,name:'偏强',ded:1.5},{level:6,name:'中等',ded:2.2},{level:7,name:'较强',ded:3.0},{level:8,name:'强烈',ded:4.0},{level:9,name:'剧烈',ded:5.5},{level:10,name:'极端',ded:7.5}];
+var SLOGANS={100:['完美！你是漂移之神！','铁定没有晕车的命','这车开得比奶茶还丝滑'],95:['稳如老狗，咖啡一滴不洒','乘客：再来一圈！','秋名山车神认证通过'],90:['优秀！乘客表示很舒服','这脚法，可以去开赛车了','平稳得让人想睡觉'],85:['不错不错，基本功扎实','乘客：还可以接受','离秋名山车神只差一步'],80:['还行吧，小瑕疵不影响大局','乘客：嗯...还行','偶尔浪一下也很正常'],75:['有点颠，但问题不大','乘客：系好安全带了','建议多练练刹车脚法'],70:['开始有点晕了...','乘客：我要吐了...','减速！减速！'],65:['晕车预警！','乘客：求你慢点','这车开得像过山车'],60:['危险！乘客已经在找塑料袋了','刹车踩得像开关','建议改坐地铁'],50:['重灾区！乘客已投降','这驾驶技术需要回炉重造','晕车界的天花板'],40:['紧急警报！乘客已晕厥','开车像在蹦迪','建议把车卖了'],30:['史诗级灾难！','这不是开车，这是驯兽','乘客：我要下车！！！'],20:['传说中的夺命连环弯？','开出了海盗船的感觉','建议原地停车'],10:['地狱级体验','乘客：我选择走路','这车有这么难开吗'],0:['零分！破纪录了！','你是不是在故意整人','建议把驾照交出来']};
 
-// 细腻扣分等级：level 1-10，扣分递增
-var DEDUCT_TABLE=[
-  {level:1,name:'微弱',ded:0.1},
-  {level:2,name:'轻微',ded:0.3},
-  {level:3,name:'轻度',ded:0.6},
-  {level:4,name:'一般',ded:1.0},
-  {level:5,name:'偏强',ded:1.5},
-  {level:6,name:'中等',ded:2.2},
-  {level:7,name:'较强',ded:3.0},
-  {level:8,name:'强烈',ded:4.0},
-  {level:9,name:'剧烈',ded:5.5},
-  {level:10,name:'极端',ded:7.5}
-];
-
-// 搞怪标语
-var SLOGANS={
-  100:['完美！你是漂移之神！','铁定没有晕车的命','这车开得比奶茶还丝滑'],
-  95:['稳如老狗，咖啡一滴不洒','乘客：再来一圈！','秋名山车神认证通过'],
-  90:['优秀！乘客表示很舒服','这脚法，可以去开赛车了','平稳得让人想睡觉'],
-  85:['不错不错，基本功扎实','乘客：还可以接受','离秋名山车神只差一步'],
-  80:['还行吧，小瑕疵不影响大局','乘客：嗯...还行','偶尔浪一下也很正常'],
-  75:['有点颠，但问题不大','乘客：系好安全带了','建议多练练刹车脚法'],
-  70:['开始有点晕了...','乘客：我要吐了...','减速！减速！'],
-  65:['晕车预警！','乘客：求你慢点','这车开得像过山车'],
-  60:['危险！乘客已经在找塑料袋了','刹车踩得像开关','建议改坐地铁'],
-  50:['重灾区！乘客已投降','这驾驶技术需要回炉重造','晕车界的天花板'],
-  40:['紧急警报！乘客已晕厥','开车像在蹦迪','建议把车卖了'],
-  30:['史诗级灾难！','这不是开车，这是驯兽','乘客：我要下车！！！'],
-  20:['传说中的夺命连环弯？','开出了海盗船的感觉','建议原地停车'],
-  10:['地狱级体验','乘客：我选择走路','这车有这么难开吗'],
-  0:['零分！破纪录了！','你是不是在故意整人','建议把驾照交出来']
-};
-
-// QR码生成（简易版，使用第三方API）
-function generateQRCode(text,size){
-  var url='https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size+'&data='+encodeURIComponent(text);
-  return url;
-}
-
-function classifyAccel(val,thresholds){
-  var g=Math.abs(val)/9.8;
-  if(g>=thresholds[3])return 10;
-  if(g>=thresholds[2])return 7;
-  if(g>=thresholds[1])return 4;
-  // 在阈值1以下，按比例给1-3级
-  if(g>=thresholds[1]*0.9)return 3;
-  if(g>=thresholds[1]*0.7)return 2;
-  if(g>=thresholds[1]*0.5)return 1;
-  return 0;
-}
-
-// 距离密度扣分系数
-function getDensityFactor(eventCount,distanceKm){
-  if(distanceKm<0.5)return 1.0; // 样本不足，不调整
-  var density=eventCount/distanceKm;
-  if(density<0.1)return 0.8;   // 优秀
-  if(density<0.5)return 1.0;   // 正常
-  if(density<1.0)return 1.2;   // 较差
-  return 1.5;                   // 很差
-}
+function classifyAccel(val,thresholds){var g=Math.abs(val)/9.8;if(g>=thresholds[3])return 10;if(g>=thresholds[2])return 7;if(g>=thresholds[1])return 4;if(g>=thresholds[1]*.9)return 3;if(g>=thresholds[1]*.7)return 2;if(g>=thresholds[1]*.5)return 1;return 0}
+function getDensityFactor(eventCount,distanceKm){if(distanceKm<.5)return 1;var d=eventCount/distanceKm;if(d<.1)return .8;if(d<.5)return 1;if(d<1)return 1.2;return 1.5}
+function generateQRCode(text,size){return 'https://api.qrserver.com/v1/create-qr-code/?size='+size+'x'+size+'&data='+encodeURIComponent(text)}
 
 Vue.createApp({
-  data:function(){return{
-    page:'home',title:'晕不晕',themeMode:'auto',theme:'dark',
-    sensorsReady:false,sensitivity:'moderate',sensVisible:false,
-    showNormal:true,alertMsg:'',permLoading:false,
-    recording:false,paused:false,score:100,elapsed:0,dist:0,events:[],
-    showReport:false,reportData:{events:[],duration:0,distance:0,score:0,startTime:'',endTime:''},
-    showHist:false,history:[],
-    showPoster:false
-  }},
+  data:function(){return{page:'home',title:'晕不晕',theme:'dark',sensorsReady:false,sensitivity:'moderate',sensVisible:false,showNormal:true,alertMsg:'',permLoading:false,recording:false,paused:false,score:100,elapsed:0,dist:0,events:[],showReport:false,reportData:{events:[],duration:0,distance:0,score:0,startTime:'',endTime:''},showHist:false,history:[],showPoster:false,showAbout:false}},
   computed:{
-    themeIcon:function(){return this.themeMode==='auto'?'A':this.themeMode==='dark'?'🌙':'☀️'},
-    scoreBg:function(){
-      if(this.score<=0)return'height:0%';
-      return'height:'+Math.max(5,this.score)+'%';
-    },
-    densityInfo:function(){
-      var distKm=this.reportData.distance/1000;
-      var eventCount=this.reportData.events.length;
-      if(distKm<0.5)return{density:'-',factor:'-',level:'距离过短，不调整'};
-      var density=(eventCount/distKm).toFixed(2);
-      var factor=getDensityFactor(eventCount,distKm);
-      var level=factor<1?'优秀，扣分减少':factor===1?'正常，标准扣分':factor<1.5?'较差，扣分增加':'很差，扣分大幅增加';
-      return{density:density,factor:factor+'x',level:level};
-    },
+    scoreInt:function(){return Math.floor(this.score)},
+    scoreDec:function(){return Math.abs(Math.round((this.score%1)*10))},
+    finalScore:function(){var distKm=this.reportData.distance/1000;var factor=getDensityFactor(this.reportData.events.length,distKm);return Math.max(0,Math.round((this.reportData.score*factor)*10)/10)},
+    densityInfo:function(){var distKm=this.reportData.distance/1000;var eventCount=this.reportData.events.length;if(distKm<.5)return{density:'-',factor:'1.0x',level:'距离过短'};var density=(eventCount/distKm).toFixed(2);var factor=getDensityFactor(eventCount,distKm);var level=factor<1?'优秀':factor===1?'正常':factor<1.5?'较差':'很差';return{density:density,factor:factor+'x',level:level}},
     reportLevel:function(){var s=this.reportData.score;if(s>=95)return{label:'无感',desc:'完全没有晕车感',c:'#00c853',icon:'😊'};if(s>=88)return{label:'轻微',desc:'几乎感觉不到不适',c:'#4caf50',icon:'🙂'};if(s>=78)return{label:'一般',desc:'略有不适但可接受',c:'#8bc34a',icon:'😐'};if(s>=65)return{label:'小晕',desc:'开始出现晕车症状',c:'#ff9800',icon:'😕'};if(s>=50)return{label:'晕',desc:'明显晕车不适',c:'#ff5722',icon:'😣'};if(s>=30)return{label:'严重',desc:'严重晕车',c:'#f44336',icon:'🤮'};return{label:'非常严重',desc:'极度不适',c:'#b71c1c',icon:'💀'}}
   },
   methods:{
-    cycleTheme:function(){
-      var modes=['auto','dark','light'];
-      var idx=modes.indexOf(this.themeMode);
-      this.themeMode=modes[(idx+1)%3];
-      this.applyTheme();
-      try{localStorage.setItem('themeMode',this.themeMode)}catch(e){}
-    },
-    applyTheme:function(){
-      if(this.themeMode==='auto'){this.theme=window.matchMedia('(prefers-color-scheme:dark)').matches?'dark':'light'}
-      else{this.theme=this.themeMode}
-      document.documentElement.setAttribute('data-theme',this.theme);
-    },
     fmtTime:function(s){var m=Math.floor(s/60),ss=s%60;return(m<10?'0':'')+m+':'+(ss<10?'0':'')+ss},
     fmtDateTime:function(d){return d.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})},
     saveS:function(){try{localStorage.setItem('sens',this.sensitivity)}catch(e){}},
-    requestPermissions:function(){
-      var self=this;
-      self.permLoading=true;
-      // iOS 13+ requires explicit permission
-      if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
-        DeviceMotionEvent.requestPermission().then(function(state){
-          if(state==='granted'){
-            self.sensorsReady=true;
-          }else{
-            self.alertMsg='传感器权限被拒绝，请在设置中允许';
-          }
-          self.permLoading=false;
-        }).catch(function(e){
-          self.alertMsg='请求权限失败: '+e.message;
-          self.permLoading=false;
-        });
-      }else{
-        // Android 或旧版 iOS 直接可用
-        self.sensorsReady=true;
-        self.permLoading=false;
-      }
-    },
-    start:function(){
-      var self=this;
-      if(!self.sensorsReady){
-        self.requestPermissions();
-        return;
-      }
-      self.page='recording';self.recording=true;self.paused=false;self.score=100;self.elapsed=0;self.dist=0;self.events=[];
-      self._totalDed=0;self._recent=[];self._accelH=[];self._gravSamples=[];self._calibrated=false;
-      self._gx=0;self._gy=0;self._startTime=new Date();
-      self._motionH=function(e){self.onMotion(e)};
-      window.addEventListener('devicemotion',self._motionH);
-      self._timer=setInterval(function(){if(!self.paused)self.elapsed=Math.floor((Date.now()-self._startTime.getTime())/1000)},1000);
-      self._geoId=navigator.geolocation.watchPosition(function(p){
-        var c=p.coords;if(c.latitude&&c.longitude){
-          if(self._lastGeoPos){
-            // 使用Haversine公式计算实际距离
-            var lat1=self._lastGeoPos.lat,lng1=self._lastGeoPos.lng;
-            var lat2=c.latitude,lng2=c.longitude;
-            var R=6371000;
-            var dLat=(lat2-lat1)*Math.PI/180;
-            var dLng=(lng2-lng1)*Math.PI/180;
-            var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
-            var d=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-            if(d>1&&d<100)self.dist+=d; // 过滤异常数据
-          }
-          self._lastGeoPos={lat:c.latitude,lng:c.longitude};
-        }
-      },function(){},{enableHighAccuracy:true});
-      // 屏幕常亮
-      self.requestWakeLock();
-    },
-    requestWakeLock:function(){
-      var self=this;
-      if('wakeLock' in navigator){
-        navigator.wakeLock.request('screen').then(function(wl){
-          self._wakeLock=wl;
-          wl.addEventListener('release',function(){self._wakeLock=null});
-        }).catch(function(e){});
-      }
-    },
-    releaseWakeLock:function(){
-      if(this._wakeLock){this._wakeLock.release().catch(function(){});this._wakeLock=null}
-    },
-    stop:function(){
-      var self=this;
-      self.recording=false;self.page='report';
-      window.removeEventListener('devicemotion',self._motionH);
-      clearInterval(self._timer);
-      if(self._geoId)navigator.geolocation.clearWatch(self._geoId);
-      self.releaseWakeLock();
-      var endTime=new Date();
-      var r={events:self.events.slice(),duration:self.elapsed,distance:self.dist,score:self.score,
-        date:self._startTime.toLocaleDateString('zh-CN'),
-        startTime:self.fmtDateTime(self._startTime),
-        endTime:self.fmtDateTime(endTime)};
-      self.history.unshift(r);
-      try{localStorage.setItem('history',JSON.stringify(self.history.slice(0,20)))}catch(e){}
-      self.reportData=r;
-    },
+    requestPermissions:function(){var self=this;self.permLoading=true;if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){DeviceMotionEvent.requestPermission().then(function(s){self.sensorsReady=s==='granted';if(!s)self.alertMsg='传感器权限被拒绝';self.permLoading=false}).catch(function(e){self.alertMsg='请求失败';self.permLoading=false})}else{self.sensorsReady=true;self.permLoading=false}},
+    start:function(){var self=this;if(!self.sensorsReady){self.requestPermissions();return}self.page='recording';self.recording=true;self.paused=false;self.score=100;self.elapsed=0;self.dist=0;self.events=[];self._totalDed=0;self._recent=[];self._accelH=[];self._gravSamples=[];self._calibrated=false;self._gx=0;self._gy=0;self._startTime=new Date();self._motionH=function(e){self.onMotion(e)};window.addEventListener('devicemotion',self._motionH);self._timer=setInterval(function(){if(!self.paused)self.elapsed=Math.floor((Date.now()-self._startTime.getTime())/1000)},1000);self._lastGeoPos=null;self._geoId=navigator.geolocation.watchPosition(function(p){var c=p.coords;if(c.latitude&&c.longitude){if(self._lastGeoPos){var R=6371000,dLat=(c.latitude-self._lastGeoPos.lat)*Math.PI/180,dLng=(c.longitude-self._lastGeoPos.lng)*Math.PI/180,a=Math.sin(dLat/2)**2+Math.cos(self._lastGeoPos.lat*Math.PI/180)*Math.cos(c.latitude*Math.PI/180)*Math.sin(dLng/2)**2;var d=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));if(d>1&&d<100)self.dist+=d}self._lastGeoPos={lat:c.latitude,lng:c.longitude}}},function(){},{enableHighAccuracy:true});if('wakeLock' in navigator)navigator.wakeLock.request('screen').then(function(w){self._wl=w}).catch(function(){})},
+    stop:function(){var self=this;self.recording=false;self.page='report';window.removeEventListener('devicemotion',self._motionH);clearInterval(self._timer);if(self._geoId)navigator.geolocation.clearWatch(self._geoId);if(self._wl)try{self._wl.release()}catch(e){}var endTime=new Date();var r={events:self.events.slice(),duration:self.elapsed,distance:self.dist,score:self.score,date:self._startTime.toLocaleDateString('zh-CN'),startTime:self.fmtDateTime(self._startTime),endTime:self.fmtDateTime(endTime)};self.history.unshift(r);try{localStorage.setItem('history',JSON.stringify(self.history.slice(0,20)))}catch(e){}self.reportData=r},
     togglePause:function(){this.paused=!this.paused},
-    showHistory:function(){
-      try{var h=localStorage.getItem('history');if(h)self.history=JSON.parse(h)}catch(e){}
-      this.page='history';
-    },
+    showHistory:function(){try{var h=localStorage.getItem('history');if(h)this.history=JSON.parse(h)}catch(e){}this.page='history'},
     viewReport:function(r){this.reportData=r;this.page='report'},
-    getSlogan:function(score){
-      var keys=Object.keys(SLOGANS).map(Number).sort(function(a,b){return b-a});
-      for(var i=0;i<keys.length;i++){if(score>=keys[i])return SLOGANS[keys[i]][Math.floor(Math.random()*SLOGANS[keys[i]].length)]}
-      return SLOGANS[0][0];
-    },
-    shareReport:function(){
-      this.showPoster=true;
-      var self=this;
-      this.$nextTick(function(){self.generatePoster()});
-    },
-    generatePoster:function(){
-      var canvas=this.$refs.posterCanvas;
-      if(!canvas)return;
-      var ctx=canvas.getContext('2d');
-      var W=640,H=960;
-      // 背景
-      var grad=ctx.createLinearGradient(0,0,0,H);
-      grad.addColorStop(0,'#1a1a2e');
-      grad.addColorStop(0.5,'#16213e');
-      grad.addColorStop(1,'#0f3460');
-      ctx.fillStyle=grad;
-      ctx.fillRect(0,0,W,H);
-      // 装饰圆
-      ctx.beginPath();ctx.arc(W-80,80,120,0,Math.PI*2);ctx.fillStyle='rgba(203,162,230,.1)';ctx.fill();
-      ctx.beginPath();ctx.arc(60,H-100,80,0,Math.PI*2);ctx.fillStyle='rgba(203,162,230,.08)';ctx.fill();
-      // 标题
-      ctx.fillStyle='#fff';ctx.font='bold 36px sans-serif';ctx.textAlign='center';
-      ctx.fillText('🚗 晕不晕 · 驾驶报告',W/2,80);
-      // 分数
-      ctx.font='bold 120px monospace';ctx.fillStyle='#CBA2E6';
-      ctx.fillText(this.reportData.score,W/2,240);
-      // 等级
-      ctx.font='bold 28px sans-serif';ctx.fillStyle='#fff';
-      ctx.fillText(this.reportLevel.icon+' '+this.reportLevel.label,W/2,290);
-      // 标语
-      var slogan=this.getSlogan(this.reportData.score);
-      ctx.font='20px sans-serif';ctx.fillStyle='rgba(255,255,255,.7)';
-      ctx.fillText(slogan,W/2,330);
-      // 分隔线
-      ctx.strokeStyle='rgba(203,162,230,.3)';ctx.lineWidth=2;
-      ctx.beginPath();ctx.moveTo(80,370);ctx.lineTo(W-80,370);ctx.stroke();
-      // 数据卡片
-      var cards=[
-        {label:'事件数',value:this.reportData.events.length+''},
-        {label:'时长',value:this.fmtTime(this.reportData.duration)},
-        {label:'距离',value:(this.reportData.distance/1000).toFixed(1)+'km'}
-      ];
-      ctx.textAlign='center';
-      cards.forEach(function(c,i){
-        var x=120+i*200;
-        ctx.fillStyle='rgba(255,255,255,.1)';
-        ctx.beginPath();ctx.roundRect(x-60,400,120,80,12);ctx.fill();
-        ctx.fillStyle='#CBA2E6';ctx.font='bold 28px monospace';
-        ctx.fillText(c.value,x,445);
-        ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='14px sans-serif';
-        ctx.fillText(c.label,x,470);
-      });
-      // 事件列表
-      ctx.textAlign='left';ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='16px sans-serif';
-      ctx.fillText('事件详情',80,540);
-      var self=this;
-      this.reportData.events.slice(0,5).forEach(function(ev,i){
-        var y=580+i*40;
-        ctx.fillStyle='rgba(255,255,255,.8)';ctx.font='16px sans-serif';
-        ctx.fillText(ev.name+' ('+ev.levelName+')',80,y);
-        ctx.fillStyle='#ff9800';ctx.textAlign='right';
-        ctx.fillText('-'+ev.ded.toFixed(1)+'分',W-80,y);
-        ctx.textAlign='left';
-      });
-      // QR码
-      var qrUrl=generateQRCode(window.location.href,160);
-      var img=new Image();
-      img.crossOrigin='anonymous';
-      img.onload=function(){
-        ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(W/2-90,720,180,180,12);ctx.fill();
-        ctx.drawImage(img,W/2-80,730,160,160);
-        ctx.fillStyle='rgba(255,255,255,.5)';ctx.font='12px sans-serif';ctx.textAlign='center';
-        ctx.fillText('扫码查看报告',W/2,920);
-      };
-      img.src=qrUrl;
-      // 底部
-      ctx.fillStyle='rgba(255,255,255,.3)';ctx.font='12px sans-serif';ctx.textAlign='center';
-      ctx.fillText('晕不晕 · 驾驶舒适度检测',W/2,H-30);
-    },
-    downloadPoster:function(){
-      var canvas=this.$refs.posterCanvas;
-      if(!canvas)return;
-      var link=document.createElement('a');
-      link.download='晕不晕报告_'+this.reportData.score+'分.png';
-      link.href=canvas.toDataURL('image/png');
-      link.click();
-    },
-    onMotion:function(e){
-      if(!this.recording||this.paused)return;
-      var a=e.acceleration||e.accelerationIncludingGravity;if(!a)return;
-      var ax=a.x||0,ay=a.y||0;
-      if(!this._calibrated){
-        this._gravSamples.push({x:ax,y:ay});
-        if(this._gravSamples.length>=15){
-          var gx=0,gy=0;for(var i=0;i<this._gravSamples.length;i++){gx+=this._gravSamples[i].x;gy+=this._gravSamples[i].y}
-          this._gx=gx/15;this._gy=gy/15;this._calibrated=true;this._gravSamples=[];
-        }return;
-      }
-      ax-=this._gx;ay-=this._gy;
-      var fx=Math.abs(ax)<0.3?0:ax;var fy=Math.abs(ay)<0.3?0:ay;
-      var p=PROFILES[this.sensitivity];var now=Date.now();
-      this._accelH.push({x:fx,y:fy,t:now});if(this._accelH.length>200)this._accelH=this._accelH.slice(-200);
-      // 急减速
-      var bl=classifyAccel(-fy,p.b);
-      if(bl>0)this.addEvt('急减速',bl,1.5);
-      // 急加速
-      var al=classifyAccel(fy,p.a);
-      if(al>0)this.addEvt('急加速',al,0.75);
-      // 急转向
-      var tl=classifyAccel(fx,p.t);
-      if(tl>0)this.addEvt('急转向',tl,0.8);
-    },
-    addEvt:function(name,level,weight){
-      var now=Date.now();
-      var dup=this._recent.filter(function(e){return e.name===name&&(now-e.t)<1500});
-      if(dup.length>0)return;
-      var levelIdx=Math.min(level,10)-1;
-      var dedEntry=DEDUCT_TABLE[levelIdx]||DEDUCT_TABLE[0];
-      // 计算距离密度扣分系数
-      var distKm=this.dist/1000;
-      var densityFactor=getDensityFactor(this.events.length,distKm);
-      var ded=dedEntry.ded*weight*densityFactor;
-      this._recent.push({name:name,t:now});
-      this._totalDed+=ded;
-      this.score=Math.round((100-this._totalDed)*10)/10;
-      this.events.unshift({name:name,level:level,levelName:dedEntry.name,ded:ded,densityFactor:densityFactor});
-    }
+    getSlogan:function(score){var keys=Object.keys(SLOGANS).map(Number).sort(function(a,b){return b-a});for(var i=0;i<keys.length;i++){if(score>=keys[i])return SLOGANS[keys[i]][Math.floor(Math.random()*SLOGANS[keys[i]].length)]}return''},
+    shareReport:function(){this.showPoster=true;var self=this;this.$nextTick(function(){self.generatePoster()})},
+    generatePoster:function(){var canvas=this.$refs.posterCanvas;if(!canvas)return;var ctx=canvas.getContext('2d');var W=640,H=960;var grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,'#1a1a2e');grad.addColorStop(.5,'#16213e');grad.addColorStop(1,'#0f3460');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff';ctx.font='bold 36px sans-serif';ctx.textAlign='center';ctx.fillText('晕不晕 · 驾驶报告',W/2,80);ctx.font='bold 100px monospace';ctx.fillStyle='#CBA2E6';ctx.fillText(this.reportData.score,W/2,220);ctx.font='bold 28px sans-serif';ctx.fillStyle='#fff';ctx.fillText(this.reportLevel.icon+' '+this.reportLevel.label,W/2,270);var slogan=this.getSlogan(this.reportData.score);ctx.font='20px sans-serif';ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillText(slogan,W/2,310);ctx.strokeStyle='rgba(203,162,230,.3)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(80,350);ctx.lineTo(W-80,350);ctx.stroke();var cards=[{l:'事件',v:this.reportData.events.length+''},{l:'时长',v:this.fmtTime(this.reportData.duration)},{l:'距离',v:(this.reportData.distance/1000).toFixed(1)+'km'}];cards.forEach(function(c,i){var x=120+i*200;ctx.fillStyle='rgba(255,255,255,.1)';ctx.beginPath();ctx.roundRect(x-60,380,120,80,12);ctx.fill();ctx.fillStyle='#CBA2E6';ctx.font='bold 28px monospace';ctx.textAlign='center';ctx.fillText(c.v,x,425);ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='14px sans-serif';ctx.fillText(c.l,x,450)});var img=new Image();img.crossOrigin='anonymous';img.onload=function(){ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(W/2-90,520,180,180,12);ctx.fill();ctx.drawImage(img,W/2-80,530,160,160);ctx.fillStyle='rgba(255,255,255,.5)';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.fillText('扫码查看报告',W/2,720)};img.src=generateQRCode(window.location.href,160);ctx.fillStyle='rgba(255,255,255,.3)';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.fillText('晕不晕 · 驾驶舒适度检测',W/2,H-30)},
+    downloadPoster:function(){var canvas=this.$refs.posterCanvas;if(!canvas)return;var link=document.createElement('a');link.download='晕不晕报告_'+this.reportData.score+'分.png';link.href=canvas.toDataURL('image/png');link.click()},
+    onMotion:function(e){if(!this.recording||this.paused)return;var a=e.acceleration||e.accelerationIncludingGravity;if(!a)return;var ax=a.x||0,ay=a.y||0;if(!this._calibrated){this._gravSamples.push({x:ax,y:ay});if(this._gravSamples.length>=15){var gx=0,gy=0;for(var i=0;i<this._gravSamples.length;i++){gx+=this._gravSamples[i].x;gy+=this._gravSamples[i].y}this._gx=gx/15;this._gy=gy/15;this._calibrated=true;this._gravSamples=[]}return}ax-=this._gx;ay-=this._gy;var fx=Math.abs(ax)<.3?0:ax;var fy=Math.abs(ay)<.3?0:ay;var p=PROFILES[this.sensitivity];this._accelH.push({x:fx,y:fy,t:Date.now()});if(this._accelH.length>200)this._accelH=this._accelH.slice(-200);var bl=classifyAccel(-fy,p.b);if(bl>0)this.addEvt('急减速',bl,1.5);var al=classifyAccel(fy,p.a);if(al>0)this.addEvt('急加速',al,.75);var tl=classifyAccel(fx,p.t);if(tl>0)this.addEvt('急转向',tl,.8)},
+    addEvt:function(name,level,weight){var now=Date.now();var dup=this._recent.filter(function(e){return e.name===name&&(now-e.t)<1500});if(dup.length>0)return;var idx=Math.min(level,10)-1;var de=DEDUCT_TABLE[idx]||DEDUCT_TABLE[0];var distKm=this.dist/1000;var df=getDensityFactor(this.events.length,distKm);var ded=de.ded*weight*df;this._recent.push({name:name,t:now});this._totalDed+=ded;this.score=Math.round((100-this._totalDed)*10)/10;this.events.unshift({name:name,level:level,levelName:de.name,ded:ded,densityFactor:df})}
   },
-  mounted:function(){
-    var self=this;
-    try{var tm=localStorage.getItem('themeMode');if(tm)self.themeMode=tm}catch(e){}
-    self.applyTheme();
-    window.matchMedia('(prefers-color-scheme:dark)').addEventListener('change',function(){if(self.themeMode==='auto')self.applyTheme()});
-    try{var s=localStorage.getItem('sens');if(s&&PROFILES[s])self.sensitivity=s}catch(e){}
-    try{var h=localStorage.getItem('history');if(h)self.history=JSON.parse(h)}catch(e){}
-    self._imgTimer=setInterval(function(){self.showNormal=!self.showNormal},2000);
-  },
+  mounted:function(){var self=this;try{var s=localStorage.getItem('sens');if(s&&PROFILES[s])self.sensitivity=s}catch(e){}try{var h=localStorage.getItem('history');if(h)self.history=JSON.parse(h)}catch(e){}self._imgTimer=setInterval(function(){self.showNormal=!self.showNormal},2000)},
   beforeUnmount:function(){if(this._imgTimer)clearInterval(this._imgTimer)}
 }).mount('#app');
 </script>
