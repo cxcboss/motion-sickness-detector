@@ -14,160 +14,171 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 #app{width:100%;height:100%}
 .img-fade{transition:opacity .4s}
 .qmark{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--cb);color:var(--ts);font-size:11px;font-weight:700;cursor:pointer;margin-left:4px}
+.page-enter-active,.page-leave-active{transition:transform .25s ease,opacity .25s ease}
+.page-enter-from{transform:translateX(30px);opacity:0}
+.page-leave-to{transform:translateX(-30px);opacity:0}
 </style>
 </head>
 <body>
 <div id="app" v-cloak>
-  <!-- HOME -->
-  <div v-if="page==='home'" style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;text-align:center;padding:20px">
-    <div style="margin-bottom:20px">
-      <img :src="showNormal?'头图-不晕.webp':'头图-晕.webp'" class="img-fade" style="width:120px;height:120px;object-fit:cover;border-radius:16px" alt="晕车检测">
-    </div>
-    <h1 style="font-size:30px;font-weight:200;letter-spacing:6px;margin-bottom:8px;color:var(--text)">{{title}}</h1>
-    <p style="color:var(--ts);font-size:14px;margin-bottom:36px">把手机平放在平面上，点击"开始"测试开车的平稳度。</p>
-    <button style="padding:14px 52px;border-radius:28px;border:none;background:var(--accent);color:#000;font-size:16px;font-weight:600;cursor:pointer" @click="start">
-      {{permLoading?'请求权限中...':'开始检测'}}
-    </button>
-    <div style="margin-top:48px;display:flex;gap:40px">
-      <div style="text-align:center;cursor:pointer" @click="sensVisible=!sensVisible">
-        <img :src="theme==='dark'?'设置-深色.svg':'设置-浅色.svg'" style="width:36px;height:36px" alt="设置">
-        <div style="font-size:11px;color:var(--ts);margin-top:6px">设置</div>
+  <transition name="page" mode="out-in">
+    <!-- HOME -->
+    <div v-if="currentPage==='home'" key="home" style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;text-align:center;padding:20px">
+      <div style="margin-bottom:20px">
+        <img :src="showNormal?'头图-不晕.webp':'头图-晕.webp'" class="img-fade" style="width:120px;height:120px;object-fit:cover;border-radius:16px" alt="晕车检测">
       </div>
-      <div style="text-align:center;cursor:pointer" @click="showHistory">
-        <img :src="theme==='dark'?'历史-深色.svg':'历史-浅色.svg'" style="width:36px;height:36px" alt="历史">
-        <div style="font-size:11px;color:var(--ts);margin-top:6px">历史</div>
-      </div>
-    </div>
-    <div style="position:fixed;bottom:24px;left:0;right:0;text-align:center">
-      <span @click="showAbout=true" style="font-size:12px;color:var(--td);cursor:pointer">关于</span>
-    </div>
-    <div v-if="sensVisible" @click="sensVisible=false" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10"></div>
-    <div v-if="sensVisible" style="position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--cb);padding:24px 20px;border-radius:20px 20px 0 0;z-index:11">
-      <div style="font-size:16px;font-weight:600;margin-bottom:16px;color:var(--text)">选择灵敏度</div>
-      <div style="display:flex;gap:10px">
-        <div v-for="lv in ['mild','moderate','severe']" :key="lv" @click.stop="sensitivity=lv;sensVisible=false;saveS()"
-          :style="{flex:1,padding:'14px',borderRadius:'14px',textAlign:'center',cursor:'pointer',background:sensitivity===lv?'var(--accent)':'var(--card)',color:sensitivity===lv?'#000':'var(--text)',border:sensitivity===lv?'2px solid var(--accent)':'2px solid var(--cb)',fontWeight:'600'}">
-          {{lv==='mild'?'轻度':lv==='moderate'?'中度':'重度'}}
+      <h1 style="font-size:30px;font-weight:200;letter-spacing:6px;margin-bottom:8px;color:var(--text)">{{title}}</h1>
+      <p style="color:var(--ts);font-size:14px;margin-bottom:36px">把手机平放在平面上，点击开始测试开车的平稳度。</p>
+      <button style="padding:14px 52px;border-radius:28px;border:none;background:var(--accent);color:#000;font-size:16px;font-weight:600;cursor:pointer" @click="start">
+        {{permLoading?'请求权限中...':'开始检测'}}
+      </button>
+      <div style="margin-top:48px;display:flex;gap:40px">
+        <div style="text-align:center;cursor:pointer" @click="navigate('settings')">
+          <img :src="theme==='dark'?'设置-深色.svg':'设置-浅色.svg'" style="width:36px;height:36px" alt="设置">
+          <div style="font-size:11px;color:var(--ts);margin-top:6px">设置</div>
+        </div>
+        <div style="text-align:center;cursor:pointer" @click="navigate('history')">
+          <img :src="theme==='dark'?'历史-深色.svg':'历史-浅色.svg'" style="width:36px;height:36px" alt="历史">
+          <div style="font-size:11px;color:var(--ts);margin-top:6px">历史</div>
         </div>
       </div>
-    </div>
-  </div>
-
-  <!-- RECORDING -->
-  <div v-if="page==='recording'" :style="{position:'fixed',inset:0,zIndex:20,background:theme==='dark'?'#000':'#fff'}">
-    <div :style="{position:'absolute',left:0,right:0,bottom:0,background:'var(--accent)',transition:'height .8s',height:score>0?Math.max(3,score)+'%':'0%',zIndex:0}"></div>
-    <div :style="{position:'absolute',inset:0,display:'flex',flexDirection:'column',padding:'60px 20px 40px',zIndex:1,color:theme==='dark'?'#fff':'#000'}">
-      <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 16px">
-        <span style="font-size:14px;font-weight:600">{{paused?'已暂停':'检测中'}}</span>
+      <div style="position:fixed;bottom:24px;left:0;right:0;text-align:center">
+        <span @click="showAbout=true" style="font-size:12px;color:var(--td);cursor:pointer">关于</span>
+      </div>
+      <div v-if="sensVisible" @click="sensVisible=false" style="position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:10"></div>
+      <div v-if="sensVisible" style="position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--cb);padding:24px 20px;border-radius:20px 20px 0 0;z-index:11">
+        <div style="font-size:16px;font-weight:600;margin-bottom:16px;color:var(--text)">选择灵敏度</div>
         <div style="display:flex;gap:10px">
-          <button @click="togglePause" :style="{padding:'10px 20px',borderRadius:'16px',background:paused?(theme==='dark'?'#000':'#fff'):(theme==='dark'?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)'),border:paused?'none':('1px solid '+(theme==='dark'?'rgba(255,255,255,.2)':'rgba(0,0,0,.15)')),color:paused?'var(--accent)':(theme==='dark'?'#fff':'#000'),fontSize:'14px',fontWeight:'600',cursor:'pointer'}">{{paused?'继续':'暂停'}}</button>
-          <button @click="stop" style="padding:10px 24px;border-radius:16px;background:#ff1744;border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer">结束</button>
-        </div>
-      </div>
-      <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%">
-        <div style="display:flex;align-items:baseline">
-          <span style="font-size:120px;font-weight:100;font-family:monospace;line-height:1">{{scoreInt}}</span>
-          <span style="font-size:40px;font-weight:100;font-family:monospace;line-height:1">.{{scoreDec}}</span>
-        </div>
-        <div style="font-size:16px;margin-top:8px;opacity:.7">舒适度</div>
-        <div style="display:flex;gap:36px;margin-top:32px">
-          <div style="text-align:center"><div style="font-size:22px;font-weight:700;font-family:monospace">{{fmtTime(elapsed)}}</div><div style="font-size:11px;opacity:.6">时长</div></div>
-          <div style="text-align:center"><div style="font-size:22px;font-weight:700;font-family:monospace">{{(dist/1000).toFixed(2)}}</div><div style="font-size:11px;opacity:.6">公里</div></div>
-          <div style="text-align:center"><div style="font-size:22px;font-weight:700;font-family:monospace">{{events.length}}</div><div style="font-size:11px;opacity:.6">事件</div></div>
-        </div>
-        <div v-if="events.length>0" style="margin-top:24px;width:100%;max-height:180px;overflow-y:auto;padding:0 8px">
-          <div v-for="(ev,i) in events.slice(0,8)" :key="i" :style="{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid '+(theme==='dark'?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)')}">
-            <span style="font-size:14px">{{ev.name}} <span :style="{color:ev.level<=3?'#2e7d32':ev.level<=6?'#e65100':'#c62828'}">({{ev.levelName}})</span></span>
-            <span style="font-size:13px;opacity:.6">-{{ev.ded.toFixed(1)}}分</span>
+          <div v-for="lv in ['mild','moderate','severe']" :key="lv" @click.stop="sensitivity=lv;sensVisible=false;saveS()"
+            :style="{flex:1,padding:'14px',borderRadius:'14px',textAlign:'center',cursor:'pointer',background:sensitivity===lv?'var(--accent)':'var(--card)',color:sensitivity===lv?'#000':'var(--text)',border:sensitivity===lv?'2px solid var(--accent)':'2px solid var(--cb)',fontWeight:'600'}">
+            {{lv==='mild'?'轻度':lv==='moderate'?'中度':'重度'}}
           </div>
         </div>
       </div>
     </div>
-    <div v-if="paused" style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px">
-      <div style="font-size:56px;font-weight:300;color:#fff;letter-spacing:10px">已暂停</div>
-      <button @click="togglePause" style="padding:20px 64px;border-radius:32px;background:#CBA2E6;border:none;color:#000;font-size:22px;font-weight:600;cursor:pointer">继续检测</button>
-      <button @click="stop" style="padding:14px 40px;border-radius:24px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:15px;cursor:pointer">结束检测</button>
-    </div>
-  </div>
 
-  <!-- REPORT -->
-  <div v-if="page==='report'" style="position:fixed;inset:0;background:var(--bg);z-index:20;overflow-y:auto;padding:20px 16px;padding-bottom:80px;padding-top:calc(20px + env(safe-area-inset-top,0px))">
-    <div v-if="prevPage==='history'" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <button @click="page='history'" style="padding:8px 16px;border-radius:12px;background:var(--card);border:1px solid var(--cb);color:var(--text);font-size:13px;cursor:pointer">← 返回</button>
-      <span style="font-size:17px;font-weight:600;color:var(--text)">报告详情</span>
-      <div style="width:60px"></div>
-    </div>
-    <div style="text-align:center;padding:10px 0">
-      <div style="display:flex;align-items:baseline;justify-content:center">
-        <span style="font-size:72px;font-weight:100;font-family:monospace;color:var(--text)">{{scoreInt}}</span>
-        <span style="font-size:24px;font-weight:100;font-family:monospace;color:var(--text)">.{{scoreDec}}</span>
-      </div>
-      <div style="font-size:18px;font-weight:600;margin-top:8px" :style="{color:reportLevel.c}">{{reportLevel.label}}</div>
-      <div style="font-size:14px;font-weight:600;margin-top:12px;padding:8px 16px;background:var(--card);border-radius:20px;display:inline-block;color:var(--accent)">{{getSlogan(reportData.score)}}</div>
-    </div>
-    <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
-      <div style="font-size:16px;font-weight:600;margin-bottom:10px;color:var(--text)">综合评分</div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cb)">
-        <span style="font-size:14px;color:var(--ts);display:flex;align-items:center">基础评分<span class="qmark" @click="showTip('base')">?</span></span>
-        <span style="font-size:14px;color:var(--text)">{{reportData.score}}分</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cb)">
-        <span style="font-size:14px;color:var(--ts);display:flex;align-items:center">距离系数<span class="qmark" @click="showTip('density')">?</span></span>
-        <span style="font-size:14px;color:var(--text)">{{densityInfo.factor}}</span>
-      </div>
-      <div style="display:flex;justify-content:space-between;padding:8px 0">
-        <span style="font-size:14px;color:var(--ts);display:flex;align-items:center">综合评分<span class="qmark" @click="showTip('final')">?</span></span>
-        <span style="font-size:16px;font-weight:700;color:var(--accent)">{{finalScore}}分</span>
-      </div>
-    </div>
-    <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
-      <div style="display:flex;justify-content:space-around;text-align:center">
-        <div><div style="font-size:20px;font-weight:700;color:var(--text)">{{reportData.events.length}}</div><div style="font-size:11px;color:var(--ts)">事件</div></div>
-        <div><div style="font-size:20px;font-weight:700;color:var(--text)">{{fmtTime(reportData.duration)}}</div><div style="font-size:11px;color:var(--ts)">时长</div></div>
-        <div><div style="font-size:20px;font-weight:700;color:var(--text)">{{(reportData.distance/1000).toFixed(1)}}km</div><div style="font-size:11px;color:var(--ts)">距离</div></div>
-      </div>
-    </div>
-    <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
-      <div style="font-size:14px;color:var(--ts)">开始时间：{{reportData.startTime}}</div>
-      <div style="font-size:14px;color:var(--ts);margin-top:6px">结束时间：{{reportData.endTime}}</div>
-    </div>
-    <div v-if="reportData.events.length>0" style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
-      <div style="font-size:16px;font-weight:600;margin-bottom:12px;color:var(--text)">事件详情</div>
-      <div v-for="(ev,i) in reportData.events" :key="i" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--cb)">
-        <span style="font-size:14px;color:var(--text)">{{ev.name}} <span :style="{color:ev.level<=2?'var(--accent)':'#ff9800',fontSize:'12px'}">({{ev.levelName}})</span></span>
-        <span style="color:var(--ts);font-size:13px">-{{ev.ded.toFixed(1)}}分</span>
-      </div>
-    </div>
-    <div style="height:20px"></div>
-    <div style="position:fixed;bottom:0;left:0;right:0;padding:16px 20px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--bg);z-index:25;display:flex;gap:12px">
-      <button @click="page='home'" style="flex:1;padding:14px;border-radius:28px;border:none;background:var(--accent);color:#000;font-size:16px;font-weight:600;cursor:pointer">返回首页</button>
-      <button @click="shareReport" style="padding:14px 20px;border-radius:28px;border:2px solid var(--accent);background:transparent;color:var(--accent);font-size:16px;font-weight:600;cursor:pointer">分享</button>
-    </div>
-  </div>
-
-  <!-- HISTORY -->
-  <div v-if="page==='history'" style="position:fixed;inset:0;background:var(--bg);z-index:20;overflow-y:auto;padding:20px 16px;padding-top:calc(20px + env(safe-area-inset-top,0px))">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
-      <button @click="page='home'" style="padding:8px 16px;border-radius:12px;background:var(--card);border:1px solid var(--cb);color:var(--text);font-size:13px;cursor:pointer">← 返回</button>
-      <span style="font-size:17px;font-weight:600;color:var(--text)">历史报告</span>
-      <div style="width:60px"></div>
-    </div>
-    <div v-if="history.length===0" style="text-align:center;padding:50px 0;color:var(--ts)">
-      <div style="font-size:44px;margin-bottom:10px">📭</div>
-      <p>暂无历史报告</p>
-    </div>
-    <div v-for="(r,i) in history" :key="i" @click="viewReport(r)" style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer">
-      <div style="display:flex;justify-content:space-between;align-items:center">
-        <div>
-          <div style="font-size:14px;font-weight:600;color:var(--text)">{{r.date}}</div>
-          <div style="font-size:11px;color:var(--ts);margin-top:4px">{{r.startTime}} → {{r.endTime}}</div>
-          <div style="font-size:12px;color:var(--ts);margin-top:2px">{{fmtTime(r.duration)}} · {{(r.distance/1000).toFixed(1)}}km</div>
+    <!-- SETTINGS -->
+    <div v-if="currentPage==='settings'" key="settings" style="position:absolute;inset:0;background:var(--bg);overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0px)">
+      <div class="hd"><div class="bk" @click="navigate('home')">‹</div><div class="tt">灵敏度设置</div><div class="rt"></div></div>
+      <div style="padding:4px 16px 40px">
+        <div class="cd" style="margin-top:8px">
+          <div style="font-size:16px;font-weight:600;margin-bottom:16px;color:var(--text)">选择灵敏度</div>
+          <div style="display:flex;gap:10px">
+            <div v-for="lv in ['mild','moderate','severe']" :key="lv" @click="sensitivity=lv;saveS()"
+              :style="{flex:1,padding:'14px',borderRadius:'14px',textAlign:'center',cursor:'pointer',background:sensitivity===lv?'var(--accent)':'var(--card)',color:sensitivity===lv?'#000':'var(--text)',border:sensitivity===lv?'2px solid var(--accent)':'2px solid var(--cb)',fontWeight:'600'}">
+              {{lv==='mild'?'轻度':lv==='moderate'?'中度':'重度'}}
+            </div>
+          </div>
         </div>
-        <div style="font-size:24px;font-weight:700;font-family:monospace" :style="{color:r.score>=90?'var(--accent)':r.score>=60?'#ff9800':'#ff1744'}">{{r.score}}</div>
+        <button @click="navigate('home')" style="width:100%;padding:14px;border-radius:28px;border:none;background:var(--accent);color:#000;font-size:16px;font-weight:600;cursor:pointer">完成</button>
       </div>
     </div>
-    <div style="height:40px"></div>
-  </div>
+
+    <!-- HISTORY -->
+    <div v-if="currentPage==='history'" key="history" style="position:absolute;inset:0;background:var(--bg);overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,0px)">
+      <div class="hd"><div class="bk" @click="navigate('home')">‹</div><div class="tt">历史报告</div><div class="rt"></div></div>
+      <div style="padding:4px 16px 40px">
+        <div v-if="history.length===0" style="text-align:center;padding:50px 0;color:var(--ts)">
+          <div style="font-size:44px;margin-bottom:10px">📭</div><p>暂无历史报告</p>
+        </div>
+        <div v-for="(r,i) in history" :key="i" @click="viewReport(r)" style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-size:14px;font-weight:600;color:var(--text)">{{r.date}}</div>
+              <div style="font-size:11px;color:var(--ts);margin-top:4px">{{r.startTime}} → {{r.endTime}}</div>
+              <div style="font-size:12px;color:var(--ts);margin-top:2px">{{fmtTime(r.duration)}} · {{(r.distance/1000).toFixed(1)}}km</div>
+            </div>
+            <div style="font-size:24px;font-weight:700;font-family:monospace" :style="{color:r.score>=90?'var(--accent)':r.score>=60?'#ff9800':'#ff1744'}">{{r.score}}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REPORT -->
+    <div v-if="currentPage==='report'" key="report" style="position:absolute;inset:0;background:var(--bg);overflow-y:auto;padding-bottom:80px;padding-top:env(safe-area-inset-top,0px)">
+      <div class="hd"><div class="bk" @click="navigate(prevPage||'history')">‹</div><div class="tt">报告详情</div><div class="rt"></div></div>
+      <div style="padding:4px 16px">
+        <div style="text-align:center;padding:10px 0">
+          <div style="display:flex;align-items:baseline;justify-content:center">
+            <span style="font-size:72px;font-weight:100;font-family:monospace;color:var(--text)">{{scoreInt}}</span>
+            <span style="font-size:24px;font-weight:100;font-family:monospace;color:var(--text)">.{{scoreDec}}</span>
+          </div>
+          <div style="font-size:18px;font-weight:600;margin-top:8px" :style="{color:reportLevel.c}">{{reportLevel.label}}</div>
+          <div style="font-size:14px;font-weight:600;margin-top:12px;padding:8px 16px;background:var(--card);border-radius:20px;display:inline-block;color:var(--accent)">{{getSlogan(reportData.score)}}</div>
+        </div>
+        <div class="cd">
+          <div style="font-size:16px;font-weight:600;margin-bottom:10px;color:var(--text)">综合评分</div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cb)">
+            <span style="font-size:14px;color:var(--ts);display:flex;align-items:center">基础评分<span class="qmark" @click="showTip('base')">?</span></span>
+            <span style="font-size:14px;color:var(--text)">{{reportData.score}}分</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cb)">
+            <span style="font-size:14px;color:var(--ts);display:flex;align-items:center">距离系数<span class="qmark" @click="showTip('density')">?</span></span>
+            <span style="font-size:14px;color:var(--text)">{{densityInfo.factor}}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:8px 0">
+            <span style="font-size:14px;color:var(--ts);display:flex;align-items:center">综合评分<span class="qmark" @click="showTip('final')">?</span></span>
+            <span style="font-size:16px;font-weight:700;color:var(--accent)">{{finalScore}}分</span>
+          </div>
+        </div>
+        <div class="cd">
+          <div style="display:flex;justify-content:space-around;text-align:center">
+            <div><div style="font-size:20px;font-weight:700;color:var(--text)">{{reportData.events.length}}</div><div style="font-size:11px;color:var(--ts)">事件</div></div>
+            <div><div style="font-size:20px;font-weight:700;color:var(--text)">{{fmtTime(reportData.duration)}}</div><div style="font-size:11px;color:var(--ts)">时长</div></div>
+            <div><div style="font-size:20px;font-weight:700;color:var(--text)">{{(reportData.distance/1000).toFixed(1)}}km</div><div style="font-size:11px;color:var(--ts)">距离</div></div>
+          </div>
+        </div>
+        <div v-if="reportData.events.length>0" class="cd">
+          <div style="font-size:16px;font-weight:600;margin-bottom:12px;color:var(--text)">事件详情</div>
+          <div v-for="(ev,i) in reportData.events" :key="i" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--cb)">
+            <span style="font-size:14px;color:var(--text)">{{ev.name}} <span :style="{color:ev.level<=2?'var(--accent)':'#ff9800',fontSize:'12px'}">({{ev.levelName}})</span></span>
+            <span style="color:var(--ts);font-size:13px">-{{ev.ded.toFixed(1)}}分</span>
+          </div>
+        </div>
+      </div>
+      <div style="position:fixed;bottom:0;left:0;right:0;padding:16px 20px;padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--bg);z-index:25;display:flex;gap:12px">
+        <button @click="navigate('home')" style="flex:1;padding:14px;border-radius:28px;border:none;background:var(--accent);color:#000;font-size:16px;font-weight:600;cursor:pointer">返回首页</button>
+        <button @click="shareReport" style="padding:14px 20px;border-radius:28px;border:2px solid var(--accent);background:transparent;color:var(--accent);font-size:16px;font-weight:600;cursor:pointer">分享</button>
+      </div>
+    </div>
+
+    <!-- RECORDING -->
+    <div v-if="currentPage==='recording'" key="recording" :style="{position:'absolute',inset:0,background:theme==='dark'?'#000':'#fff',zIndex:20}">
+      <div :style="{position:'absolute',left:0,right:0,bottom:0,background:'var(--accent)',transition:'height .8s',height:score>0?Math.max(3,score)+'%':'0%',zIndex:0}"></div>
+      <div :style="{position:'absolute',inset:0,display:'flex',flexDirection:'column',padding:'60px 20px 40px',zIndex:1,color:theme==='dark'?'#fff':'#000'}">
+        <div style="display:flex;justify-content:space-between;align-items:center;width:100%;padding:0 16px">
+          <span style="font-size:14px;font-weight:600">{{paused?'已暂停':'检测中'}}</span>
+          <div style="display:flex;gap:10px">
+            <button @click="togglePause" :style="{padding:'10px 20px',borderRadius:'16px',background:paused?(theme==='dark'?'#000':'#fff'):(theme==='dark'?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)'),border:paused?'none':('1px solid '+(theme==='dark'?'rgba(255,255,255,.2)':'rgba(0,0,0,.15)')),color:paused?'var(--accent)':(theme==='dark'?'#fff':'#000'),fontSize:'14px',fontWeight:'600',cursor:'pointer'}">{{paused?'继续':'暂停'}}</button>
+            <button @click="stop" style="padding:10px 24px;border-radius:16px;background:#ff1744;border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer">结束</button>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;width:100%">
+          <div style="display:flex;align-items:baseline">
+            <span style="font-size:120px;font-weight:100;font-family:monospace;line-height:1">{{scoreInt}}</span>
+            <span style="font-size:40px;font-weight:100;font-family:monospace;line-height:1">.{{scoreDec}}</span>
+          </div>
+          <div style="font-size:16px;margin-top:8px;opacity:.7">舒适度</div>
+          <div style="display:flex;gap:36px;margin-top:32px">
+            <div style="text-align:center"><div style="font-size:22px;font-weight:700;font-family:monospace">{{fmtTime(elapsed)}}</div><div style="font-size:11px;opacity:.6">时长</div></div>
+            <div style="text-align:center"><div style="font-size:22px;font-weight:700;font-family:monospace">{{(dist/1000).toFixed(2)}}</div><div style="font-size:11px;opacity:.6">公里</div></div>
+            <div style="text-align:center"><div style="font-size:22px;font-weight:700;font-family:monospace">{{events.length}}</div><div style="font-size:11px;opacity:.6">事件</div></div>
+          </div>
+          <div v-if="events.length>0" style="margin-top:24px;width:100%;max-height:180px;overflow-y:auto;padding:0 8px">
+            <div v-for="(ev,i) in events.slice(0,8)" :key="i" :style="{display:'flex',justifyContent:'space-between',padding:'10px 0',borderBottom:'1px solid '+(theme==='dark'?'rgba(255,255,255,.15)':'rgba(0,0,0,.1)')}">
+              <span style="font-size:14px">{{ev.name}} <span :style="{color:ev.level<=3?'#2e7d32':ev.level<=6?'#e65100':'#c62828'}">({{ev.levelName}})</span></span>
+              <span style="font-size:13px;opacity:.6">-{{ev.ded.toFixed(1)}}分</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div v-if="paused" style="position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:30;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:28px">
+        <div style="font-size:56px;font-weight:300;color:#fff;letter-spacing:10px">已暂停</div>
+        <button @click="togglePause" style="padding:20px 64px;border-radius:32px;background:#CBA2E6;border:none;color:#000;font-size:22px;font-weight:600;cursor:pointer">继续检测</button>
+        <button @click="stop" style="padding:14px 40px;border-radius:24px;background:rgba(255,255,255,.15);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:15px;cursor:pointer">结束检测</button>
+      </div>
+    </div>
+  </transition>
 
   <!-- ABOUT -->
   <div v-if="showAbout" style="position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;padding:20px">
@@ -211,7 +222,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
   <!-- SHARE POSTER -->
   <div v-if="showPoster" style="position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px">
     <div style="background:#fff;border-radius:20px;padding:20px;max-width:360px;width:100%;max-height:90vh;overflow-y:auto">
-      <canvas ref="posterCanvas" width="640" height="960" style="width:100%;border-radius:12px"></canvas>
+      <canvas ref="posterCanvas" width="750" height="1125" style="width:100%;border-radius:12px"></canvas>
       <div style="display:flex;gap:10px;margin-top:16px">
         <button @click="downloadPoster" style="flex:1;padding:12px;border-radius:12px;border:none;background:#CBA2E6;color:#000;font-size:14px;font-weight:600;cursor:pointer">保存图片</button>
         <button @click="shareLink" style="flex:1;padding:12px;border-radius:12px;border:none;background:#333;color:#fff;font-size:14px;font-weight:600;cursor:pointer">分享链接</button>
@@ -229,7 +240,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
+<script src="https://cdn.bootcdn.net/ajax/libs/vue/3.3.4/vue.global.prod.js"></script>
 <script>
 var PROFILES={mild:{b:{1:.27,2:.36,3:.46},a:{1:.26,2:.35,3:.44},t:{1:.27,2:.37,3:.47}},moderate:{b:{1:.226,2:.305,3:.386},a:{1:.214,2:.242,3:.317},t:{1:.225,2:.311,3:.395}},severe:{b:{1:.16,2:.22,3:.30},a:{1:.15,2:.20,3:.27},t:{1:.16,2:.22,3:.30}}};
 var DEDUCT_TABLE=[{level:1,name:'微弱',ded:0.1},{level:2,name:'轻微',ded:0.3},{level:3,name:'轻度',ded:0.6},{level:4,name:'一般',ded:1.0},{level:5,name:'偏强',ded:1.5},{level:6,name:'中等',ded:2.2},{level:7,name:'较强',ded:3.0},{level:8,name:'强烈',ded:4.0},{level:9,name:'剧烈',ded:5.5},{level:10,name:'极端',ded:7.5}];
@@ -252,6 +263,7 @@ var SLOGANS={
   0:['零分！破纪录了！','你是不是在故意整人','建议把驾照交出来','乘客：我要下车报警','你这是在开拖拉机吗']
 };
 var TIPS={base:'基础评分是根据检测到的急加速、急减速、急转向等不良驾驶行为直接计算的分数。每次不良事件会根据严重程度扣除相应分数。',density:'距离系数是根据每公里发生的事件密度来调整的评分系数。事件密度越低（长距离少量事件），系数越小（扣分越少）；事件密度越高，系数越大（扣分越多）。',final:'综合评分 = 基础评分 × 距离系数。它综合考虑了驾驶行为和行驶距离，更能反映整体驾驶舒适度。长距离行驶中出现少量失误是可以理解的。'};
+var ROUTES={settings:'settings',history:'history',report:'report',recording:'recording',standards:'standards'};
 
 function classifyAccel(val,thresholds){var g=Math.abs(val)/9.8;if(g>=thresholds[3])return 10;if(g>=thresholds[2])return 7;if(g>=thresholds[1])return 4;if(g>=thresholds[1]*.9)return 3;if(g>=thresholds[1]*.7)return 2;if(g>=thresholds[1]*.5)return 1;return 0}
 function getDensityFactor(eventCount,distanceKm){if(distanceKm<.5)return 1;var d=eventCount/distanceKm;if(d<.1)return .8;if(d<.5)return 1;if(d<1)return 1.2;return 1.5}
@@ -259,7 +271,7 @@ function generateQRCode(text,size){return 'https://api.qrserver.com/v1/create-qr
 function scoreColor(score){if(score>=90)return'#00c853';if(score>=75)return'#4caf50';if(score>=60)return'#ff9800';return'#f44336'}
 
 Vue.createApp({
-  data:function(){return{page:'home',prevPage:'history',title:'晕不晕',theme:'dark',sensorsReady:false,sensitivity:'moderate',sensVisible:false,showNormal:true,alertMsg:'',permLoading:false,recording:false,paused:false,score:100,elapsed:0,dist:0,events:[],showReport:false,reportData:{events:[],duration:0,distance:0,score:0,startTime:'',endTime:''},showHist:false,history:[],showPoster:false,showAbout:false,showTipVisible:false,tipTitle:'',tipContent:''}},
+  data:function(){return{currentPage:'home',prevPage:'history',title:'晕不晕',theme:'dark',sensorsReady:false,sensitivity:'moderate',sensVisible:false,showNormal:true,alertMsg:'',permLoading:false,recording:false,paused:false,score:100,elapsed:0,dist:0,events:[],reportData:{events:[],duration:0,distance:0,score:0,startTime:'',endTime:''},history:[],showPoster:false,showAbout:false,showTipVisible:false,tipTitle:'',tipContent:''}},
   computed:{
     scoreInt:function(){return Math.floor(this.score)},
     scoreDec:function(){return Math.abs(Math.round((this.score%1)*10))},
@@ -268,133 +280,27 @@ Vue.createApp({
     reportLevel:function(){var s=this.reportData.score;if(s>=95)return{label:'无感',desc:'完全没有晕车感',c:'#00c853'};if(s>=88)return{label:'轻微',desc:'几乎感觉不到不适',c:'#4caf50'};if(s>=78)return{label:'一般',desc:'略有不适但可接受',c:'#8bc34a'};if(s>=65)return{label:'小晕',desc:'开始出现晕车症状',c:'#ff9800'};if(s>=50)return{label:'晕',desc:'明显晕车不适',c:'#ff5722'};if(s>=30)return{label:'严重',desc:'严重晕车',c:'#f44336'};return{label:'非常严重',desc:'极度不适',c:'#b71c1c'}}
   },
   methods:{
+    navigate:function(page){location.hash=page==='home'?'':page},
     fmtTime:function(s){var m=Math.floor(s/60),ss=s%60;return(m<10?'0':'')+m+':'+(ss<10?'0':'')+ss},
     fmtDateTime:function(d){return d.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})},
     saveS:function(){try{localStorage.setItem('sens',this.sensitivity)}catch(e){}},
     showTip:function(key){this.tipTitle=key==='base'?'基础评分说明':key==='density'?'距离系数说明':'综合评分说明';this.tipContent=TIPS[key];this.showTipVisible=true},
+    handleHashChange:function(){var hash=location.hash.slice(1);this.currentPage=ROUTES[hash]||'home'},
     requestPermissions:function(){var self=this;self.permLoading=true;var promises=[];if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){promises.push(DeviceMotionEvent.requestPermission());promises.push(DeviceOrientationEvent.requestPermission())}Promise.all(promises).then(function(results){self.sensorsReady=results.every(function(r){return r==='granted'});if(!self.sensorsReady)self.alertMsg='部分传感器权限被拒绝';self.permLoading=false}).catch(function(){self.sensorsReady=true;self.permLoading=false})},
-    start:function(){var self=this;if(!self.sensorsReady){self.requestPermissions();return}self.page='recording';self.recording=true;self.paused=false;self.score=100;self.elapsed=0;self.dist=0;self.events=[];self._totalDed=0;self._recent=[];self._accelH=[];self._gravSamples=[];self._calibrated=false;self._gx=0;self._gy=0;self._startTime=new Date();self._motionH=function(e){self.onMotion(e)};window.addEventListener('devicemotion',self._motionH);self._timer=setInterval(function(){if(!self.paused)self.elapsed=Math.floor((Date.now()-self._startTime.getTime())/1000)},1000);self._lastGeoPos=null;self._geoId=navigator.geolocation.watchPosition(function(p){var c=p.coords;if(c.latitude&&c.longitude){if(self._lastGeoPos){var R=6371000,dLat=(c.latitude-self._lastGeoPos.lat)*Math.PI/180,dLng=(c.longitude-self._lastGeoPos.lng)*Math.PI/180,a=Math.sin(dLat/2)**2+Math.cos(self._lastGeoPos.lat*Math.PI/180)*Math.cos(c.latitude*Math.PI/180)*Math.sin(dLng/2)**2;var d=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));if(d>1&&d<100)self.dist+=d}self._lastGeoPos={lat:c.latitude,lng:c.longitude}}},function(){},{enableHighAccuracy:true});if('wakeLock' in navigator)navigator.wakeLock.request('screen').then(function(w){self._wl=w}).catch(function(){})},
-    stop:function(){var self=this;self.recording=false;self.page='report';self.prevPage='recording';window.removeEventListener('devicemotion',self._motionH);clearInterval(self._timer);if(self._geoId)navigator.geolocation.clearWatch(self._geoId);if(self._wl)try{self._wl.release()}catch(e){}var endTime=new Date();var r={events:self.events.slice(),duration:self.elapsed,distance:self.dist,score:self.score,date:self._startTime.toLocaleDateString('zh-CN'),startTime:self.fmtDateTime(self._startTime),endTime:self.fmtDateTime(endTime)};self.history.unshift(r);try{localStorage.setItem('history',JSON.stringify(self.history.slice(0,20)))}catch(e){}self.reportData=r},
+    start:function(){var self=this;if(!self.sensorsReady){self.requestPermissions();return}self.navigate('recording');self.recording=true;self.paused=false;self.score=100;self.elapsed=0;self.dist=0;self.events=[];self._totalDed=0;self._recent=[];self._accelH=[];self._gravSamples=[];self._calibrated=false;self._gx=0;self._gy=0;self._startTime=new Date();self._motionH=function(e){self.onMotion(e)};window.addEventListener('devicemotion',self._motionH);self._timer=setInterval(function(){if(!self.paused)self.elapsed=Math.floor((Date.now()-self._startTime.getTime())/1000)},1000);self._lastGeoPos=null;self._geoId=navigator.geolocation.watchPosition(function(p){var c=p.coords;if(c.latitude&&c.longitude){if(self._lastGeoPos){var R=6371000,dLat=(c.latitude-self._lastGeoPos.lat)*Math.PI/180,dLng=(c.longitude-self._lastGeoPos.lng)*Math.PI/180,a=Math.sin(dLat/2)**2+Math.cos(self._lastGeoPos.lat*Math.PI/180)*Math.cos(c.latitude*Math.PI/180)*Math.sin(dLng/2)**2;var d=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));if(d>1&&d<100)self.dist+=d}self._lastGeoPos={lat:c.latitude,lng:c.longitude}}},function(){},{enableHighAccuracy:true});if('wakeLock' in navigator)navigator.wakeLock.request('screen').then(function(w){self._wl=w}).catch(function(){})},
+    stop:function(){var self=this;self.recording=false;self.prevPage='recording';window.removeEventListener('devicemotion',self._motionH);clearInterval(self._timer);if(self._geoId)navigator.geolocation.clearWatch(self._geoId);if(self._wl)try{self._wl.release()}catch(e){}var endTime=new Date();var r={events:self.events.slice(),duration:self.elapsed,distance:self.dist,score:self.score,date:self._startTime.toLocaleDateString('zh-CN'),startTime:self.fmtDateTime(self._startTime),endTime:self.fmtDateTime(endTime)};self.history.unshift(r);try{localStorage.setItem('history',JSON.stringify(self.history.slice(0,20)))}catch(e){}self.reportData=r;self.navigate('report')},
     togglePause:function(){this.paused=!this.paused},
-    showHistory:function(){try{var h=localStorage.getItem('history');if(h)this.history=JSON.parse(h)}catch(e){}this.page='history'},
-    viewReport:function(r){this.reportData=r;this.prevPage='history';this.page='report'},
+    viewReport:function(r){this.reportData=r;this.prevPage='history';this.navigate('report')},
     getSlogan:function(score){var keys=Object.keys(SLOGANS).map(Number).sort(function(a,b){return b-a});for(var i=0;i<keys.length;i++){if(score>=keys[i])return SLOGANS[keys[i]][Math.floor(Math.random()*SLOGANS[keys[i]].length)]}return''},
     shareReport:function(){this.showPoster=true;var self=this;this.$nextTick(function(){self.generatePoster()})},
-    shareLink:function(){
-      var url=window.location.href;
-      var text='我用「晕不晕」测试了驾驶平稳度，得分'+this.reportData.score+'分！快来试试吧！';
-      if(navigator.share){
-        navigator.share({title:'晕不晕 - 驾驶舒适度检测',text:text,url:url}).catch(function(){});
-      }else if(navigator.clipboard){
-        navigator.clipboard.writeText(text+'\n'+url).then(function(){alert('链接已复制到剪贴板')}).catch(function(){alert('复制失败')});
-      }else{
-        var input=document.createElement('input');input.value=url;document.body.appendChild(input);input.select();document.execCommand('copy');document.body.removeChild(input);alert('链接已复制');
-      }
-    },
-    getEventCounts:function(){
-      var counts={};this.reportData.events.forEach(function(e){if(!counts[e.name])counts[e.name]={count:0,level:0};counts[e.name].count++;if(e.level>counts[e.name].level)counts[e.name].level=e.level});
-      return counts;
-    },
-    generatePoster:function(){
-      var canvas=this.$refs.posterCanvas;if(!canvas)return;
-      var ctx=canvas.getContext('2d');
-      var W=750,H=1125;
-      canvas.width=W;canvas.height=H;
-      // 背景
-      ctx.fillStyle='#FBF7F1';ctx.fillRect(0,0,W,H);
-      // 装饰圆
-      ctx.fillStyle='rgba(203,162,230,0.05)';
-      ctx.beginPath();ctx.arc(W-40,40,80,0,Math.PI*2);ctx.fill();
-      ctx.beginPath();ctx.arc(30,H-50,50,0,Math.PI*2);ctx.fill();
-      // 顶部小标签
-      ctx.fillStyle='#CBA2E6';ctx.font='bold 16px sans-serif';ctx.textAlign='center';
-      ctx.fillText('DRIVING REPORT',W/2,50);
-      // 分隔线
-      ctx.strokeStyle='#e8e0d4';ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(100,70);ctx.lineTo(W-100,70);ctx.stroke();
-      // 综合评分（核心大字）
-      ctx.font='bold 180px monospace';ctx.fillStyle='#CBA2E6';ctx.textAlign='center';
-      ctx.fillText(this.finalScore,W/2,280);
-      // 基础评分（小字）
-      ctx.font='26px sans-serif';ctx.fillStyle='#999';
-      ctx.fillText('基础评分 '+this.reportData.score,W/2,320);
-      // 等级标签
-      var levelBg=scoreColor(this.finalScore);
-      ctx.fillStyle=levelBg;ctx.globalAlpha=0.15;
-      ctx.beginPath();ctx.roundRect(W/2-60,350,120,36,18);ctx.fill();
-      ctx.globalAlpha=1;ctx.fillStyle=levelBg;ctx.font='bold 18px sans-serif';
-      ctx.fillText(this.reportLevel.label,W/2,375);
-      // 标语
-      var slogan=this.getSlogan(this.reportData.score);
-      ctx.font='bold 38px sans-serif';ctx.fillStyle='#2d2d2d';
-      ctx.fillText(slogan,W/2,450);
-      // 分隔线
-      ctx.strokeStyle='#e8e0d4';ctx.lineWidth=1;
-      ctx.beginPath();ctx.moveTo(80,490);ctx.lineTo(W-80,490);ctx.stroke();
-      // 数据区域标题
-      ctx.font='bold 18px sans-serif';ctx.fillStyle='#888';ctx.textAlign='left';
-      ctx.fillText('行程数据',80,530);
-      // 数据卡片
-      var self=this;
-      var cards=[
-        {label:'时长',value:this.fmtTime(this.reportData.duration),unit:''},
-        {label:'距离',value:(this.reportData.distance/1000).toFixed(1),unit:'km'},
-        {label:'事件',value:this.reportData.events.length,unit:'次'}
-      ];
-      cards.forEach(function(c,i){
-        var x=125+i*250;
-        ctx.fillStyle='#f5f0e8';
-        ctx.beginPath();ctx.roundRect(x-60,555,120,80,10);ctx.fill();
-        ctx.font='bold 32px monospace';ctx.fillStyle='#2d2d2d';ctx.textAlign='center';
-        ctx.fillText(c.value,x,600);
-        ctx.font='14px sans-serif';ctx.fillStyle='#999';
-        ctx.fillText(c.unit?c.value+c.unit:c.label,x,600);
-        ctx.font='13px sans-serif';ctx.fillStyle='#aaa';
-        ctx.fillText(c.label,x,625);
-      });
-      // 事件统计标题
-      var eventCounts=this.getEventCounts();
-      var eventNames=Object.keys(eventCounts);
-      if(eventNames.length>0){
-        ctx.font='bold 18px sans-serif';ctx.fillStyle='#888';ctx.textAlign='left';
-        ctx.fillText('事件统计',80,680);
-        // 事件网格
-        var cols=Math.min(eventNames.length,3);
-        eventNames.forEach(function(name,i){
-          var col=i%3;var row=Math.floor(i/3);
-          var x=120+col*200;var y=720+row*55;
-          // 背景
-          ctx.fillStyle='#f5f0e8';
-          ctx.beginPath();ctx.roundRect(x-50,y-20,160,45,8);ctx.fill();
-          // 名称
-          ctx.font='15px sans-serif';ctx.fillStyle='#555';ctx.textAlign='left';
-          ctx.fillText(name,x-40,y+5);
-          // 次数
-          ctx.font='bold 18px monospace';ctx.fillStyle='#CBA2E6';ctx.textAlign='right';
-          ctx.fillText(eventCounts[name].count+'次',x+100,y+5);
-          ctx.textAlign='left';
-        });
-      }
-      // QR码（右下角）
-      var qrUrl=generateQRCode(window.location.href,110);
-      var img=new Image();img.crossOrigin='anonymous';
-      img.onload=function(){
-        ctx.fillStyle='#fff';
-        ctx.beginPath();ctx.roundRect(W-140,H-170,120,120,8);ctx.fill();
-        ctx.drawImage(img,W-132,H-162,104,104);
-        ctx.fillStyle='#bbb';ctx.font='10px sans-serif';ctx.textAlign='center';
-        ctx.fillText('扫码查看',W-80,H-42);
-      };
-      img.src=qrUrl;
-      // 底部品牌
-      ctx.fillStyle='#ccc';ctx.font='10px sans-serif';ctx.textAlign='center';
-      ctx.fillText('晕不晕 · 驾驶舒适度检测',W/2,H-18);
-    },
+    shareLink:function(){var url=window.location.href;var text='我用「晕不晕」测试了驾驶平稳度，得分'+this.reportData.score+'分！快来试试吧！';if(navigator.share){navigator.share({title:'晕不晕',text:text,url:url}).catch(function(){})}else if(navigator.clipboard){navigator.clipboard.writeText(text+'\n'+url).then(function(){alert('链接已复制')}).catch(function(){alert('复制失败')})}else{var input=document.createElement('input');input.value=url;document.body.appendChild(input);input.select();document.execCommand('copy');document.body.removeChild(input);alert('链接已复制')}},
+    getEventCounts:function(){var counts={};this.reportData.events.forEach(function(e){if(!counts[e.name])counts[e.name]={count:0,level:0};counts[e.name].count++;if(e.level>counts[e.name].level)counts[e.name].level=e.level});return counts},
+    generatePoster:function(){var canvas=this.$refs.posterCanvas;if(!canvas)return;var ctx=canvas.getContext('2d');var W=750,H=1125;canvas.width=W;canvas.height=H;ctx.fillStyle='#FBF7F1';ctx.fillRect(0,0,W,H);ctx.fillStyle='rgba(203,162,230,0.05)';ctx.beginPath();ctx.arc(W-40,40,80,0,Math.PI*2);ctx.fill();ctx.beginPath();ctx.arc(30,H-50,50,0,Math.PI*2);ctx.fill();ctx.fillStyle='#CBA2E6';ctx.font='bold 16px sans-serif';ctx.textAlign='center';ctx.fillText('DRIVING REPORT',W/2,50);ctx.strokeStyle='#e8e0d4';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(100,70);ctx.lineTo(W-100,70);ctx.stroke();ctx.font='bold 180px monospace';ctx.fillStyle='#CBA2E6';ctx.fillText(this.finalScore,W/2,280);ctx.font='26px sans-serif';ctx.fillStyle='#999';ctx.fillText('基础评分 '+this.reportData.score,W/2,320);var levelBg=scoreColor(this.finalScore);ctx.fillStyle=levelBg;ctx.globalAlpha=0.15;ctx.beginPath();ctx.roundRect(W/2-60,350,120,36,18);ctx.fill();ctx.globalAlpha=1;ctx.fillStyle=levelBg;ctx.font='bold 18px sans-serif';ctx.fillText(this.reportLevel.label,W/2,375);var slogan=this.getSlogan(this.reportData.score);ctx.font='bold 38px sans-serif';ctx.fillStyle='#2d2d2d';ctx.fillText(slogan,W/2,450);ctx.strokeStyle='#e8e0d4';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(80,490);ctx.lineTo(W-80,490);ctx.stroke();ctx.font='bold 18px sans-serif';ctx.fillStyle='#888';ctx.textAlign='left';ctx.fillText('行程数据',80,530);var self=this;var cards=[{label:'时长',value:this.fmtTime(this.reportData.duration),unit:''},{label:'距离',value:(this.reportData.distance/1000).toFixed(1),unit:'km'},{label:'事件',value:this.reportData.events.length,unit:'次'}];cards.forEach(function(c,i){var x=125+i*250;ctx.fillStyle='#f5f0e8';ctx.beginPath();ctx.roundRect(x-60,555,120,80,10);ctx.fill();ctx.font='bold 32px monospace';ctx.fillStyle='#2d2d2d';ctx.textAlign='center';ctx.fillText(c.value,x,600);ctx.font='14px sans-serif';ctx.fillStyle='#999';ctx.fillText(c.unit?c.value+c.unit:c.label,x,600);ctx.font='13px sans-serif';ctx.fillStyle='#aaa';ctx.fillText(c.label,x,625)});var eventCounts=this.getEventCounts();var eventNames=Object.keys(eventCounts);if(eventNames.length>0){ctx.font='bold 18px sans-serif';ctx.fillStyle='#888';ctx.textAlign='left';ctx.fillText('事件统计',80,680);eventNames.forEach(function(name,i){var col=i%3;var row=Math.floor(i/3);var x=120+col*200;var y=720+row*55;ctx.fillStyle='#f5f0e8';ctx.beginPath();ctx.roundRect(x-50,y-20,160,45,8);ctx.fill();ctx.font='15px sans-serif';ctx.fillStyle='#555';ctx.textAlign='left';ctx.fillText(name,x-40,y+5);ctx.font='bold 18px monospace';ctx.fillStyle='#CBA2E6';ctx.textAlign='right';ctx.fillText(eventCounts[name].count+'次',x+100,y+5);ctx.textAlign='left'})}var qrUrl=generateQRCode(window.location.href,110);var img=new Image();img.crossOrigin='anonymous';img.onload=function(){ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(W-140,H-170,120,120,8);ctx.fill();ctx.drawImage(img,W-132,H-162,104,104);ctx.fillStyle='#bbb';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('扫码查看',W-80,H-42)};img.src=qrUrl;ctx.fillStyle='#ccc';ctx.font='10px sans-serif';ctx.textAlign='center';ctx.fillText('晕不晕 · 驾驶舒适度检测',W/2,H-18)},
     downloadPoster:function(){var canvas=this.$refs.posterCanvas;if(!canvas)return;var link=document.createElement('a');link.download='晕不晕报告_'+this.reportData.score+'分.png';link.href=canvas.toDataURL('image/png');link.click()},
     onMotion:function(e){if(!this.recording||this.paused)return;var a=e.acceleration||e.accelerationIncludingGravity;if(!a)return;var ax=a.x||0,ay=a.y||0;if(!this._calibrated){this._gravSamples.push({x:ax,y:ay});if(this._gravSamples.length>=15){var gx=0,gy=0;for(var i=0;i<this._gravSamples.length;i++){gx+=this._gravSamples[i].x;gy+=this._gravSamples[i].y}this._gx=gx/15;this._gy=gy/15;this._calibrated=true;this._gravSamples=[]}return}ax-=this._gx;ay-=this._gy;var fx=Math.abs(ax)<.3?0:ax;var fy=Math.abs(ay)<.3?0:ay;var p=PROFILES[this.sensitivity];this._accelH.push({x:fx,y:fy,t:Date.now()});if(this._accelH.length>200)this._accelH=this._accelH.slice(-200);var bl=classifyAccel(-fy,p.b);if(bl>0)this.addEvt('急减速',bl,1.5);var al=classifyAccel(fy,p.a);if(al>0)this.addEvt('急加速',al,.75);var tl=classifyAccel(fx,p.t);if(tl>0)this.addEvt('急转向',tl,.8)},
     addEvt:function(name,level,weight){var now=Date.now();var dup=this._recent.filter(function(e){return e.name===name&&(now-e.t)<1500});if(dup.length>0)return;var idx=Math.min(level,10)-1;var de=DEDUCT_TABLE[idx]||DEDUCT_TABLE[0];var distKm=this.dist/1000;var df=getDensityFactor(this.events.length,distKm);var ded=de.ded*weight*df;this._recent.push({name:name,t:now});this._totalDed+=ded;this.score=Math.round((100-this._totalDed)*10)/10;this.events.unshift({name:name,level:level,levelName:de.name,ded:ded,densityFactor:df})}
   },
-  mounted:function(){var self=this;try{var s=localStorage.getItem('sens');if(s&&PROFILES[s])self.sensitivity=s}catch(e){}try{var h=localStorage.getItem('history');if(h)self.history=JSON.parse(h)}catch(e){}self._imgTimer=setInterval(function(){self.showNormal=!self.showNormal},2000)},
+  mounted:function(){var self=this;window.addEventListener('hashchange',function(){self.handleHashChange()});self.handleHashChange();try{var s=localStorage.getItem('sens');if(s&&PROFILES[s])self.sensitivity=s}catch(e){}try{var h=localStorage.getItem('history');if(h)self.history=JSON.parse(h)}catch(e){}self._imgTimer=setInterval(function(){self.showNormal=!self.showNormal},2000)},
   beforeUnmount:function(){if(this._imgTimer)clearInterval(this._imgTimer)}
 }).mount('#app');
 </script>
