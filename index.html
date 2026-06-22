@@ -60,7 +60,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
     </div>
   </div>
 
-  <!-- RECORDING - Full screen progress -->
+  <!-- RECORDING -->
   <div v-if="page==='recording'" style="position:fixed;inset:0;z-index:20">
     <div class="score-progress" :style="scoreBg"></div>
     <div class="recording-content">
@@ -79,7 +79,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
       </div>
       <!-- Score -->
       <div style="text-align:center;margin-top:auto;margin-bottom:auto">
-        <div style="font-size:160px;font-weight:100;font-family:monospace;line-height:1;color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.3)">{{score}}</div>
+        <div style="font-size:120px;font-weight:100;font-family:monospace;line-height:1;color:#fff;text-shadow:0 4px 30px rgba(0,0,0,.3)">{{score}}</div>
         <div style="font-size:16px;color:rgba(255,255,255,.8);margin-top:8px">舒适度</div>
       </div>
       <!-- Stats -->
@@ -91,7 +91,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
       <!-- Events -->
       <div v-if="events.length>0" style="margin-top:24px;width:100%;max-height:160px;overflow-y:auto;padding:0 8px">
         <div v-for="(ev,i) in events.slice(0,6)" :key="i" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.15)">
-          <span style="font-size:14px;color:#fff">{{ev.name}} <span :style="{color:ev.level===1?'#90EE90':ev.level===2?'#FFD700':'#FF6B6B'}">({{ev.level===1?'轻微':ev.level===2?'中等':'严重'}})</span></span>
+          <span style="font-size:14px;color:#fff">{{ev.name}} <span :style="{color:ev.level===1?'#90EE90':ev.level===2?'#FFD700':'#FF6B6B'}">({{ev.levelName}})</span></span>
           <span style="font-size:13px;color:rgba(255,255,255,.7)">-{{ev.ded.toFixed(1)}}分</span>
         </div>
       </div>
@@ -113,13 +113,14 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
         <div><div style="font-size:20px;font-weight:700;color:var(--text)">{{(reportData.distance/1000).toFixed(1)}}km</div><div style="font-size:11px;color:var(--ts)">距离</div></div>
       </div>
     </div>
-    <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:0;margin-bottom:12px;overflow:hidden">
-      <div id="rpt-map" style="width:100%;height:220px;background:var(--bg2)"></div>
+    <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
+      <div style="font-size:14px;color:var(--ts)">开始时间：{{reportData.startTime}}</div>
+      <div style="font-size:14px;color:var(--ts);margin-top:6px">结束时间：{{reportData.endTime}}</div>
     </div>
     <div v-if="reportData.events.length>0" style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
       <div style="font-size:16px;font-weight:600;margin-bottom:12px;color:var(--text)">事件详情</div>
       <div v-for="(ev,i) in reportData.events" :key="i" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--cb)">
-        <span style="font-size:14px;color:var(--text)">{{ev.name}} <span :style="{color:ev.level===1?'var(--accent)':ev.level===2?'#ff9800':'#ff1744',fontSize:'12px'}">{{ev.level===1?'轻微':ev.level===2?'中等':'严重'}}</span></span>
+        <span style="font-size:14px;color:var(--text)">{{ev.name}} <span :style="{color:ev.level<=2?'var(--accent)':'#ff9800',fontSize:'12px'}">({{ev.levelName}})</span></span>
         <span style="color:var(--ts);font-size:13px">-{{ev.ded.toFixed(1)}}分</span>
       </div>
     </div>
@@ -140,7 +141,11 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
     </div>
     <div v-for="(r,i) in history" :key="i" @click="viewReport(r)" style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer">
       <div style="display:flex;justify-content:space-between;align-items:center">
-        <div><div style="font-size:14px;font-weight:600;color:var(--text)">{{r.date}}</div><div style="font-size:12px;color:var(--ts);margin-top:3px">{{fmtTime(r.duration)}} · {{(r.distance/1000).toFixed(1)}}km</div></div>
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--text)">{{r.date}}</div>
+          <div style="font-size:11px;color:var(--ts);margin-top:4px">{{r.startTime}} → {{r.endTime}}</div>
+          <div style="font-size:12px;color:var(--ts);margin-top:2px">{{fmtTime(r.duration)}} · {{(r.distance/1000).toFixed(1)}}km</div>
+        </div>
         <div style="font-size:24px;font-weight:700;font-family:monospace" :style="{color:r.score>=90?'var(--accent)':r.score>=60?'#ff9800':'#ff1744'}">{{r.score}}</div>
       </div>
     </div>
@@ -159,7 +164,32 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
 <script>
 var PROFILES={mild:{b:{1:.27,2:.36,3:.46},a:{1:.26,2:.35,3:.44},t:{1:.27,2:.37,3:.47}},moderate:{b:{1:.226,2:.305,3:.386},a:{1:.214,2:.242,3:.317},t:{1:.225,2:.311,3:.395}},severe:{b:{1:.16,2:.22,3:.30},a:{1:.15,2:.20,3:.27},t:{1:.16,2:.22,3:.30}}};
-var EW={brake:1.5,accel:.75,turn:.8,jerk:.5,sway:.5};
+
+// 细腻扣分等级：level 1-10，扣分递增
+var DEDUCT_TABLE=[
+  {level:1,name:'微弱',ded:0.1},
+  {level:2,name:'轻微',ded:0.3},
+  {level:3,name:'轻度',ded:0.6},
+  {level:4,name:'一般',ded:1.0},
+  {level:5,name:'偏强',ded:1.5},
+  {level:6,name:'中等',ded:2.2},
+  {level:7,name:'较强',ded:3.0},
+  {level:8,name:'强烈',ded:4.0},
+  {level:9,name:'剧烈',ded:5.5},
+  {level:10,name:'极端',ded:7.5}
+];
+
+function classifyAccel(val,thresholds){
+  var g=Math.abs(val)/9.8;
+  if(g>=thresholds[3])return 10;
+  if(g>=thresholds[2])return 7;
+  if(g>=thresholds[1])return 4;
+  // 在阈值1以下，按比例给1-3级
+  if(g>=thresholds[1]*0.9)return 3;
+  if(g>=thresholds[1]*0.7)return 2;
+  if(g>=thresholds[1]*0.5)return 1;
+  return 0;
+}
 
 Vue.createApp({
   data:function(){return{
@@ -167,7 +197,7 @@ Vue.createApp({
     sensorsReady:true,sensitivity:'moderate',sensVisible:false,
     showNormal:true,alertMsg:'',
     recording:false,paused:false,score:100,elapsed:0,dist:0,events:[],
-    showReport:false,reportData:{events:[],duration:0,distance:0,score:0,gpsPath:[],eventLocations:[]},
+    showReport:false,reportData:{events:[],duration:0,distance:0,score:0,startTime:'',endTime:''},
     showHist:false,history:[]
   }},
   computed:{
@@ -192,21 +222,18 @@ Vue.createApp({
       document.documentElement.setAttribute('data-theme',this.theme);
     },
     fmtTime:function(s){var m=Math.floor(s/60),ss=s%60;return(m<10?'0':'')+m+':'+(ss<10?'0':'')+ss},
+    fmtDateTime:function(d){return d.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})},
     saveS:function(){try{localStorage.setItem('sens',this.sensitivity)}catch(e){}},
     start:function(){
       var self=this;
       self.page='recording';self.recording=true;self.paused=false;self.score=100;self.elapsed=0;self.dist=0;self.events=[];
       self._totalDed=0;self._recent=[];self._accelH=[];self._gravSamples=[];self._calibrated=false;
-      self._gx=0;self._gy=0;
-      self._gpsPath=[];self._evtLocations=[];self._lastGPS=null;self._startTime=Date.now();
+      self._gx=0;self._gy=0;self._startTime=new Date();
       self._motionH=function(e){self.onMotion(e)};
       window.addEventListener('devicemotion',self._motionH);
-      self._timer=setInterval(function(){if(!self.paused)self.elapsed=Math.floor((Date.now()-self._startTime)/1000)},1000);
+      self._timer=setInterval(function(){if(!self.paused)self.elapsed=Math.floor((Date.now()-self._startTime.getTime())/1000)},1000);
       self._geoId=navigator.geolocation.watchPosition(function(p){
-        var c=p.coords;if(c.latitude&&c.longitude){
-          self._gpsPath.push({lng:c.longitude,lat:c.latitude});
-          self._lastGPS={lng:c.longitude,lat:c.latitude};
-        }
+        var c=p.coords;if(c.latitude&&c.longitude)self.dist+=0.001;
       },function(){},{enableHighAccuracy:true});
     },
     stop:function(){
@@ -215,41 +242,21 @@ Vue.createApp({
       window.removeEventListener('devicemotion',self._motionH);
       clearInterval(self._timer);
       if(self._geoId)navigator.geolocation.clearWatch(self._geoId);
-      var r={events:self.events.slice(),duration:self.elapsed,distance:self.dist,score:self.score,date:new Date().toLocaleDateString('zh-CN'),gpsPath:self._gpsPath||[],eventLocations:self._evtLocations||[]};
+      var endTime=new Date();
+      var r={events:self.events.slice(),duration:self.elapsed,distance:self.dist,score:self.score,
+        date:self._startTime.toLocaleDateString('zh-CN'),
+        startTime:self.fmtDateTime(self._startTime),
+        endTime:self.fmtDateTime(endTime)};
       self.history.unshift(r);
       try{localStorage.setItem('history',JSON.stringify(self.history.slice(0,20)))}catch(e){}
       self.reportData=r;
-      self.$nextTick(function(){self.renderMap(r)});
-    },
-    renderMap:function(r){
-      var el=document.getElementById('rpt-map');if(!el)return;
-      if(!window.AMap){
-        el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--ts);font-size:13px">地图加载中...</div>';
-        var self=this;setTimeout(function(){self.renderMap(r)},1000);return;
-      }
-      el.innerHTML='';
-      try{
-        var m=new AMap.Map(el,{zoom:14,viewMode:'2D',mapStyle:this.theme==='dark'?'amap://styles/dark':'amap://styles/normal',resizeEnable:true});
-        el._amap=m;
-        if(r.gpsPath&&r.gpsPath.length>1){
-          m.add(new AMap.Polyline({path:r.gpsPath.map(function(p){return[p.lng,p.lat]}),strokeColor:'#CBA2E6',strokeWeight:4,strokeOpacity:.8}));
-        }
-        if(r.eventLocations){
-          var cols={1:'#90EE90',2:'#FFD700',3:'#FF6B6B'};
-          r.eventLocations.forEach(function(ev){
-            var marker=new AMap.CircleMarker({center:[ev.lng,ev.lat],radius:8,fillColor:cols[ev.level]||'#fff',fillOpacity:.9,strokeColor:'#fff',strokeWeight:2});
-            marker.setMap(m);
-          });
-        }
-        m.setFitView();
-      }catch(e){el.innerHTML='<div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--ts);font-size:13px">地图加载失败</div>';}
     },
     togglePause:function(){this.paused=!this.paused},
     showHistory:function(){
-      try{var h=localStorage.getItem('history');if(h)this.history=JSON.parse(h)}catch(e){}
+      try{var h=localStorage.getItem('history');if(h)self.history=JSON.parse(h)}catch(e){}
       this.page='history';
     },
-    viewReport:function(r){this.reportData=r;this.page='report';var self=this;this.$nextTick(function(){self.renderMap(r)})},
+    viewReport:function(r){this.reportData=r;this.page='report'},
     onMotion:function(e){
       if(!this.recording||this.paused)return;
       var a=e.acceleration||e.accelerationIncludingGravity;if(!a)return;
@@ -265,23 +272,27 @@ Vue.createApp({
       var fx=Math.abs(ax)<0.3?0:ax;var fy=Math.abs(ay)<0.3?0:ay;
       var p=PROFILES[this.sensitivity];var now=Date.now();
       this._accelH.push({x:fx,y:fy,t:now});if(this._accelH.length>200)this._accelH=this._accelH.slice(-200);
-      var decel=-fy/9.8;
-      if(decel>=p.b[3])this.addEvt('急减速',3,1.5);else if(decel>=p.b[2])this.addEvt('急减速',2,1.5);else if(decel>=p.b[1])this.addEvt('急减速',1,1.5);
-      var accel=fy/9.8;
-      if(accel>=p.a[3])this.addEvt('急加速',3,.75);else if(accel>=p.a[2])this.addEvt('急加速',2,.75);else if(accel>=p.a[1])this.addEvt('急加速',1,.75);
-      var lat=Math.abs(fx/9.8);
-      if(lat>=p.t[3])this.addEvt('急转向',3,.8);else if(lat>=p.t[2])this.addEvt('急转向',2,.8);else if(lat>=p.t[1])this.addEvt('急转向',1,.8);
+      // 急减速
+      var bl=classifyAccel(-fy,p.b);
+      if(bl>0)this.addEvt('急减速',bl,1.5);
+      // 急加速
+      var al=classifyAccel(fy,p.a);
+      if(al>0)this.addEvt('急加速',al,0.75);
+      // 急转向
+      var tl=classifyAccel(fx,p.t);
+      if(tl>0)this.addEvt('急转向',tl,0.8);
     },
     addEvt:function(name,level,weight){
       var now=Date.now();
-      var dup=this._recent.filter(function(e){return e.name===name&&(now-e.t)<2000});
+      var dup=this._recent.filter(function(e){return e.name===name&&(now-e.t)<1500});
       if(dup.length>0)return;
-      var ded=level*level*weight;
+      var levelIdx=Math.min(level,10)-1;
+      var dedEntry=DEDUCT_TABLE[levelIdx]||DEDUCT_TABLE[0];
+      var ded=dedEntry.ded*weight;
       this._recent.push({name:name,t:now});
       this._totalDed+=ded;
       this.score=Math.round((100-this._totalDed)*10)/10;
-      this.events.unshift({name:name,level:level,ded:ded});
-      if(this._lastGPS)this._evtLocations.push({name:name,level:level,lng:this._lastGPS.lng,lat:this._lastGPS.lat});
+      this.events.unshift({name:name,level:level,levelName:dedEntry.name,ded:ded});
     }
   },
   mounted:function(){
