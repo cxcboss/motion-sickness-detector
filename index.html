@@ -211,11 +211,12 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 
   <!-- SHARE POSTER -->
   <div v-if="showPoster" style="position:fixed;inset:0;z-index:100;background:rgba(0,0,0,.8);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px">
-    <div style="background:#fff;border-radius:20px;padding:20px;max-width:360px;width:100%;max-height:85vh;overflow-y:auto">
+    <div style="background:#fff;border-radius:20px;padding:20px;max-width:360px;width:100%;max-height:90vh;overflow-y:auto">
       <canvas ref="posterCanvas" width="640" height="960" style="width:100%;border-radius:12px"></canvas>
-      <div style="display:flex;gap:12px;margin-top:16px">
+      <div style="display:flex;gap:10px;margin-top:16px">
         <button @click="downloadPoster" style="flex:1;padding:12px;border-radius:12px;border:none;background:#CBA2E6;color:#000;font-size:14px;font-weight:600;cursor:pointer">保存图片</button>
-        <button @click="showPoster=false" style="flex:1;padding:12px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#333;font-size:14px;font-weight:600;cursor:pointer">关闭</button>
+        <button @click="shareLink" style="flex:1;padding:12px;border-radius:12px;border:none;background:#333;color:#fff;font-size:14px;font-weight:600;cursor:pointer">分享链接</button>
+        <button @click="showPoster=false" style="padding:12px 16px;border-radius:12px;border:1px solid #ddd;background:#fff;color:#333;font-size:14px;font-weight:600;cursor:pointer">关闭</button>
       </div>
     </div>
   </div>
@@ -233,7 +234,24 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 <script>
 var PROFILES={mild:{b:{1:.27,2:.36,3:.46},a:{1:.26,2:.35,3:.44},t:{1:.27,2:.37,3:.47}},moderate:{b:{1:.226,2:.305,3:.386},a:{1:.214,2:.242,3:.317},t:{1:.225,2:.311,3:.395}},severe:{b:{1:.16,2:.22,3:.30},a:{1:.15,2:.20,3:.27},t:{1:.16,2:.22,3:.30}}};
 var DEDUCT_TABLE=[{level:1,name:'微弱',ded:0.1},{level:2,name:'轻微',ded:0.3},{level:3,name:'轻度',ded:0.6},{level:4,name:'一般',ded:1.0},{level:5,name:'偏强',ded:1.5},{level:6,name:'中等',ded:2.2},{level:7,name:'较强',ded:3.0},{level:8,name:'强烈',ded:4.0},{level:9,name:'剧烈',ded:5.5},{level:10,name:'极端',ded:7.5}];
-var SLOGANS={100:['完美！你是漂移之神！','铁定没有晕车的命','这车开得比奶茶还丝滑'],95:['稳如老狗，咖啡一滴不洒','乘客：再来一圈！','秋名山车神认证通过'],90:['优秀！乘客表示很舒服','这脚法，可以去开赛车了','平稳得让人想睡觉'],85:['不错不错，基本功扎实','乘客：还可以接受','离秋名山车神只差一步'],80:['还行吧，小瑕疵不影响大局','乘客：嗯...还行','偶尔浪一下也很正常'],75:['有点颠，但问题不大','乘客：系好安全带了','建议多练练刹车脚法'],70:['开始有点晕了...','乘客：我要吐了...','减速！减速！'],65:['晕车预警！','乘客：求你慢点','这车开得像过山车'],60:['危险！乘客已经在找塑料袋了','刹车踩得像开关','建议改坐地铁'],50:['重灾区！乘客已投降','这驾驶技术需要回炉重造','晕车界的天花板'],40:['紧急警报！乘客已晕厥','开车像在蹦迪','建议把车卖了'],30:['史诗级灾难！','这不是开车，这是驯兽','乘客：我要下车！！！'],20:['传说中的夺命连环弯？','开出了海盗船的感觉','建议原地停车'],10:['地狱级体验','乘客：我选择走路','这车有这么难开吗'],0:['零分！破纪录了！','你是不是在故意整人','建议把驾照交出来']};
+var SLOGANS={
+  100:['完美！你是漂移之神！','铁定没有晕车的命','这车开得比奶茶还丝滑','坐你的车比坐沙发还舒服','秋名山车神来了都要让位'],
+  95:['稳如老狗，咖啡一滴不洒','乘客：再来一圈！','秋名山车神认证通过','这技术，藤原拓海都服','坐你的车可以闭眼睡觉'],
+  90:['优秀！乘客表示很舒服','这脚法，可以去开赛车了','平稳得让人想睡觉','你是不是偷偷练过漂移','乘客：可以当专车司机了'],
+  85:['不错不错，基本功扎实','乘客：还可以接受','离秋名山车神只差一步','这车开得有模有样','乘客：下次还坐你的车'],
+  80:['还行吧，小瑕疵不影响大局','乘客：嗯...还行','偶尔浪一下也很正常','稳中带皮，皮中带稳','乘客：比出租车强点'],
+  75:['有点颠，但问题不大','乘客：系好安全带了','建议多练练刹车脚法','这车开得有点上头','乘客：还行吧，习惯了'],
+  70:['开始有点晕了...','乘客：我要吐了...','减速！减速！','乘客：还有多久到？','这刹车踩得有点猛啊'],
+  65:['晕车预警！','乘客：求你慢点','这车开得像过山车','乘客：我需要一个塑料袋','你是在开赛车吗'],
+  60:['危险！乘客已经在找塑料袋了','刹车踩得像开关','建议改坐地铁','乘客：我要下车吐一会','你是不是把油门当刹车了'],
+  50:['重灾区！乘客已投降','这驾驶技术需要回炉重造','晕车界的天花板','乘客：我的胃在抗议','你确定你有驾照？'],
+  40:['紧急警报！乘客已晕厥','开车像在蹦迪','建议把车卖了','乘客：我已经灵魂出窍了','你是在开碰碰车吗'],
+  30:['史诗级灾难！','这不是开车，这是驯兽','乘客：我要下车！！！','你的车技让我怀疑人生','乘客：报警了，这算谋杀'],
+  20:['传说中的夺命连环弯？','开出了海盗船的感觉','建议原地停车','乘客：遗书我已经写好了','你的车技让我重新思考人生'],
+  10:['地狱级体验','乘客：我选择走路','这车有这么难开吗','乘客：我已经在写遗书了','你是不是在故意谋杀乘客'],
+  5:['超越人类极限！','乘客：我看到了太奶奶','这不是开车，这是刑罚','你的车技让牛顿都哭了','乘客：我已经放弃治疗了'],
+  0:['零分！破纪录了！','你是不是在故意整人','建议把驾照交出来','乘客：我要下车报警','你这是在开拖拉机吗']
+};
 var TIPS={base:'基础评分是根据检测到的急加速、急减速、急转向等不良驾驶行为直接计算的分数。每次不良事件会根据严重程度扣除相应分数。',density:'距离系数是根据每公里发生的事件密度来调整的评分系数。事件密度越低（长距离少量事件），系数越小（扣分越少）；事件密度越高，系数越大（扣分越多）。',final:'综合评分 = 基础评分 × 距离系数。它综合考虑了驾驶行为和行驶距离，更能反映整体驾驶舒适度。长距离行驶中出现少量失误是可以理解的。'};
 
 function classifyAccel(val,thresholds){var g=Math.abs(val)/9.8;if(g>=thresholds[3])return 10;if(g>=thresholds[2])return 7;if(g>=thresholds[1])return 4;if(g>=thresholds[1]*.9)return 3;if(g>=thresholds[1]*.7)return 2;if(g>=thresholds[1]*.5)return 1;return 0}
@@ -262,7 +280,101 @@ Vue.createApp({
     viewReport:function(r){this.reportData=r;this.prevPage='history';this.page='report'},
     getSlogan:function(score){var keys=Object.keys(SLOGANS).map(Number).sort(function(a,b){return b-a});for(var i=0;i<keys.length;i++){if(score>=keys[i])return SLOGANS[keys[i]][Math.floor(Math.random()*SLOGANS[keys[i]].length)]}return''},
     shareReport:function(){this.showPoster=true;var self=this;this.$nextTick(function(){self.generatePoster()})},
-    generatePoster:function(){var canvas=this.$refs.posterCanvas;if(!canvas)return;var ctx=canvas.getContext('2d');var W=640,H=960;var grad=ctx.createLinearGradient(0,0,0,H);grad.addColorStop(0,'#1a1a2e');grad.addColorStop(.5,'#16213e');grad.addColorStop(1,'#0f3460');ctx.fillStyle=grad;ctx.fillRect(0,0,W,H);ctx.fillStyle='#fff';ctx.font='bold 36px sans-serif';ctx.textAlign='center';ctx.fillText('晕不晕 · 驾驶报告',W/2,80);ctx.font='bold 100px monospace';ctx.fillStyle='#CBA2E6';ctx.fillText(this.reportData.score,W/2,220);ctx.font='bold 28px sans-serif';ctx.fillStyle='#fff';ctx.fillText(this.reportLevel.icon+' '+this.reportLevel.label,W/2,270);var slogan=this.getSlogan(this.reportData.score);ctx.font='20px sans-serif';ctx.fillStyle='rgba(255,255,255,.7)';ctx.fillText(slogan,W/2,310);ctx.strokeStyle='rgba(203,162,230,.3)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(80,350);ctx.lineTo(W-80,350);ctx.stroke();var cards=[{l:'事件',v:this.reportData.events.length+''},{l:'时长',v:this.fmtTime(this.reportData.duration)},{l:'距离',v:(this.reportData.distance/1000).toFixed(1)+'km'}];cards.forEach(function(c,i){var x=120+i*200;ctx.fillStyle='rgba(255,255,255,.1)';ctx.beginPath();ctx.roundRect(x-60,380,120,80,12);ctx.fill();ctx.fillStyle='#CBA2E6';ctx.font='bold 28px monospace';ctx.textAlign='center';ctx.fillText(c.v,x,425);ctx.fillStyle='rgba(255,255,255,.6)';ctx.font='14px sans-serif';ctx.fillText(c.l,x,450)});var img=new Image();img.crossOrigin='anonymous';img.onload=function(){ctx.fillStyle='#fff';ctx.beginPath();ctx.roundRect(W/2-90,520,180,180,12);ctx.fill();ctx.drawImage(img,W/2-80,530,160,160);ctx.fillStyle='rgba(255,255,255,.5)';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.fillText('扫码查看报告',W/2,720)};img.src=generateQRCode(window.location.href,160);ctx.fillStyle='rgba(255,255,255,.3)';ctx.font='12px sans-serif';ctx.textAlign='center';ctx.fillText('晕不晕 · 驾驶舒适度检测',W/2,H-30)},
+    shareLink:function(){
+      var url=window.location.href;
+      var text='我用「晕不晕」测试了驾驶平稳度，得分'+this.reportData.score+'分！快来试试吧！';
+      if(navigator.share){
+        navigator.share({title:'晕不晕 - 驾驶舒适度检测',text:text,url:url}).catch(function(){});
+      }else if(navigator.clipboard){
+        navigator.clipboard.writeText(text+'\n'+url).then(function(){alert('链接已复制到剪贴板')}).catch(function(){alert('复制失败')});
+      }else{
+        var input=document.createElement('input');input.value=url;document.body.appendChild(input);input.select();document.execCommand('copy');document.body.removeChild(input);alert('链接已复制');
+      }
+    },
+    getEventCounts:function(){
+      var counts={};this.reportData.events.forEach(function(e){if(!counts[e.name])counts[e.name]={count:0,level:0};counts[e.name].count++;if(e.level>counts[e.name].level)counts[e.name].level=e.level});
+      return counts;
+    },
+    generatePoster:function(){
+      var canvas=this.$refs.posterCanvas;if(!canvas)return;
+      var ctx=canvas.getContext('2d');
+      var W=640,H=960;
+      // 背景色
+      ctx.fillStyle='#FBF7F1';ctx.fillRect(0,0,W,H);
+      // 装饰圆
+      ctx.fillStyle='rgba(203,162,230,0.08)';ctx.beginPath();ctx.arc(W-60,60,100,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(203,162,230,0.06)';ctx.beginPath();ctx.arc(50,H-80,70,0,Math.PI*2);ctx.fill();
+      // 标题
+      ctx.fillStyle='#1a1a1a';ctx.font='bold 28px sans-serif';ctx.textAlign='center';
+      ctx.fillText('晕不晕 · 驾驶报告',W/2,70);
+      // 综合评分（大号）
+      ctx.font='bold 120px monospace';ctx.fillStyle='#CBA2E6';
+      ctx.fillText(this.finalScore,W/2,200);
+      // 基础评分（小号）
+      ctx.font='24px sans-serif';ctx.fillStyle='#666';
+      ctx.fillText('基础评分：'+this.reportData.score,W/2,240);
+      // 等级
+      ctx.font='bold 32px sans-serif';ctx.fillStyle='#1a1a1a';
+      ctx.fillText(this.reportLevel.icon+' '+this.reportLevel.label,W/2,290);
+      // 标语（大号，描边效果）
+      var slogan=this.getSlogan(this.reportData.score);
+      ctx.font='bold 36px sans-serif';ctx.textAlign='center';
+      ctx.strokeStyle='#CBA2E6';ctx.lineWidth=4;ctx.strokeText(slogan,W/2,350);
+      ctx.fillStyle='#1a1a1a';ctx.fillText(slogan,W/2,350);
+      // 分隔线
+      ctx.strokeStyle='#e0d8cc';ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(80,390);ctx.lineTo(W-80,390);ctx.stroke();
+      // 数据卡片
+      var self=this;
+      var cards=[
+        {icon:'⏱',label:'时长',value:this.fmtTime(this.reportData.duration)},
+        {icon:'📏',label:'距离',value:(this.reportData.distance/1000).toFixed(1)+'km'},
+        {icon:'⚡',label:'事件',value:this.reportData.events.length+'次'}
+      ];
+      cards.forEach(function(c,i){
+        var x=107+i*213;
+        ctx.fillStyle='#f0ebe3';
+        ctx.beginPath();ctx.roundRect(x-50,420,100,80,12);ctx.fill();
+        ctx.font='28px sans-serif';ctx.fillStyle='#CBA2E6';ctx.textAlign='center';
+        ctx.fillText(c.icon,x,455);
+        ctx.font='bold 20px monospace';ctx.fillStyle='#1a1a1a';
+        ctx.fillText(c.value,x,482);
+        ctx.font='12px sans-serif';ctx.fillStyle='#888';
+        ctx.fillText(c.label,x,498);
+      });
+      // 事件统计
+      var eventCounts=this.getEventCounts();
+      var eventIcons={'急加速':'🚀','急减速':'🛑','急转向':'🔄','顿挫':'〰️','摇摆':'↔️'};
+      var eventNames=Object.keys(eventCounts);
+      if(eventNames.length>0){
+        ctx.font='bold 18px sans-serif';ctx.fillStyle='#1a1a1a';ctx.textAlign='left';
+        ctx.fillText('事件详情',80,550);
+        eventNames.forEach(function(name,i){
+          var y=585+i*35;
+          var icon=eventIcons[name]||'•';
+          ctx.font='16px sans-serif';ctx.fillStyle='#333';
+          ctx.fillText(icon+' '+name,y<600?'80':'80',y);
+          ctx.textAlign='right';ctx.font='bold 16px monospace';ctx.fillStyle='#CBA2E6';
+          ctx.fillText(eventCounts[name].count+'次',W-80,y);
+          ctx.textAlign='left';
+        });
+      }
+      // QR码
+      var qrY=eventNames.length>3?680:620;
+      var qrUrl=generateQRCode(window.location.href,150);
+      var img=new Image();img.crossOrigin='anonymous';
+      img.onload=function(){
+        ctx.fillStyle='#fff';
+        ctx.beginPath();ctx.roundRect(W/2-80,qrY,160,160,12);ctx.fill();
+        ctx.drawImage(img,W/2-70,qrY+10,140,140);
+        ctx.fillStyle='#888';ctx.font='12px sans-serif';ctx.textAlign='center';
+        ctx.fillText('扫码查看报告',W/2,qrY+170);
+      };
+      img.src=qrUrl;
+      // 底部
+      ctx.fillStyle='#bbb';ctx.font='11px sans-serif';ctx.textAlign='center';
+      ctx.fillText('晕不晕 · 驾驶舒适度检测',W/2,H-25);
+    },
     downloadPoster:function(){var canvas=this.$refs.posterCanvas;if(!canvas)return;var link=document.createElement('a');link.download='晕不晕报告_'+this.reportData.score+'分.png';link.href=canvas.toDataURL('image/png');link.click()},
     onMotion:function(e){if(!this.recording||this.paused)return;var a=e.acceleration||e.accelerationIncludingGravity;if(!a)return;var ax=a.x||0,ay=a.y||0;if(!this._calibrated){this._gravSamples.push({x:ax,y:ay});if(this._gravSamples.length>=15){var gx=0,gy=0;for(var i=0;i<this._gravSamples.length;i++){gx+=this._gravSamples[i].x;gy+=this._gravSamples[i].y}this._gx=gx/15;this._gy=gy/15;this._calibrated=true;this._gravSamples=[]}return}ax-=this._gx;ay-=this._gy;var fx=Math.abs(ax)<.3?0:ax;var fy=Math.abs(ay)<.3?0:ay;var p=PROFILES[this.sensitivity];this._accelH.push({x:fx,y:fy,t:Date.now()});if(this._accelH.length>200)this._accelH=this._accelH.slice(-200);var bl=classifyAccel(-fy,p.b);if(bl>0)this.addEvt('急减速',bl,1.5);var al=classifyAccel(fy,p.a);if(al>0)this.addEvt('急加速',al,.75);var tl=classifyAccel(fx,p.t);if(tl>0)this.addEvt('急转向',tl,.8)},
     addEvt:function(name,level,weight){var now=Date.now();var dup=this._recent.filter(function(e){return e.name===name&&(now-e.t)<1500});if(dup.length>0)return;var idx=Math.min(level,10)-1;var de=DEDUCT_TABLE[idx]||DEDUCT_TABLE[0];var distKm=this.dist/1000;var df=getDensityFactor(this.events.length,distKm);var ded=de.ded*weight*df;this._recent.push({name:name,t:now});this._totalDed+=ded;this.score=Math.round((100-this._totalDed)*10)/10;this.events.unshift({name:name,level:level,levelName:de.name,ded:ded,densityFactor:df})}
