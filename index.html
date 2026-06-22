@@ -27,7 +27,7 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
     <h1 style="font-size:30px;font-weight:200;letter-spacing:6px;margin-bottom:8px;color:var(--text)">{{title}}</h1>
     <p style="color:var(--ts);font-size:14px;margin-bottom:36px">驾驶舒适度实时检测</p>
     <button style="padding:14px 52px;border-radius:28px;border:none;background:var(--accent);color:#000;font-size:16px;font-weight:600;cursor:pointer" @click="start">
-      {{sensorsReady?'开始测评':'授权传感器'}}
+      {{permLoading?'请求权限中...':sensorsReady?'开始测评':'授权传感器'}}
     </button>
     <div style="margin-top:40px;display:flex;gap:32px">
       <div style="text-align:center;cursor:pointer" @click="sensVisible=!sensVisible">
@@ -193,8 +193,8 @@ function classifyAccel(val,thresholds){
 Vue.createApp({
   data:function(){return{
     page:'home',title:'晕不晕',themeMode:'auto',theme:'dark',
-    sensorsReady:true,sensitivity:'moderate',sensVisible:false,
-    showNormal:true,alertMsg:'',
+    sensorsReady:false,sensitivity:'moderate',sensVisible:false,
+    showNormal:true,alertMsg:'',permLoading:false,
     recording:false,paused:false,score:100,elapsed:0,dist:0,events:[],
     showReport:false,reportData:{events:[],duration:0,distance:0,score:0,startTime:'',endTime:''},
     showHist:false,history:[]
@@ -223,8 +223,34 @@ Vue.createApp({
     fmtTime:function(s){var m=Math.floor(s/60),ss=s%60;return(m<10?'0':'')+m+':'+(ss<10?'0':'')+ss},
     fmtDateTime:function(d){return d.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})},
     saveS:function(){try{localStorage.setItem('sens',this.sensitivity)}catch(e){}},
+    requestPermissions:function(){
+      var self=this;
+      self.permLoading=true;
+      // iOS 13+ requires explicit permission
+      if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+        DeviceMotionEvent.requestPermission().then(function(state){
+          if(state==='granted'){
+            self.sensorsReady=true;
+          }else{
+            self.alertMsg='传感器权限被拒绝，请在设置中允许';
+          }
+          self.permLoading=false;
+        }).catch(function(e){
+          self.alertMsg='请求权限失败: '+e.message;
+          self.permLoading=false;
+        });
+      }else{
+        // Android 或旧版 iOS 直接可用
+        self.sensorsReady=true;
+        self.permLoading=false;
+      }
+    },
     start:function(){
       var self=this;
+      if(!self.sensorsReady){
+        self.requestPermissions();
+        return;
+      }
       self.page='recording';self.recording=true;self.paused=false;self.score=100;self.elapsed=0;self.dist=0;self.events=[];
       self._totalDed=0;self._recent=[];self._accelH=[];self._gravSamples=[];self._calibrated=false;
       self._gx=0;self._gy=0;self._startTime=new Date();
@@ -234,6 +260,20 @@ Vue.createApp({
       self._geoId=navigator.geolocation.watchPosition(function(p){
         var c=p.coords;if(c.latitude&&c.longitude)self.dist+=0.001;
       },function(){},{enableHighAccuracy:true});
+      // 屏幕常亮
+      self.requestWakeLock();
+    },
+    requestWakeLock:function(){
+      var self=this;
+      if('wakeLock' in navigator){
+        navigator.wakeLock.request('screen').then(function(wl){
+          self._wakeLock=wl;
+          wl.addEventListener('release',function(){self._wakeLock=null});
+        }).catch(function(e){});
+      }
+    },
+    releaseWakeLock:function(){
+      if(this._wakeLock){this._wakeLock.release().catch(function(){});this._wakeLock=null}
     },
     stop:function(){
       var self=this;
@@ -241,6 +281,7 @@ Vue.createApp({
       window.removeEventListener('devicemotion',self._motionH);
       clearInterval(self._timer);
       if(self._geoId)navigator.geolocation.clearWatch(self._geoId);
+      self.releaseWakeLock();
       var endTime=new Date();
       var r={events:self.events.slice(),duration:self.elapsed,distance:self.dist,score:self.score,
         date:self._startTime.toLocaleDateString('zh-CN'),
