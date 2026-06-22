@@ -7,42 +7,43 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 [v-cloak]{display:none !important}
-:root{--bg:#000;--bg2:#111;--card:rgba(255,255,255,.06);--cb:rgba(255,255,255,.1);--text:#fff;--ts:rgba(255,255,255,.55);--td:rgba(255,255,255,.3);--hdr:rgba(0,0,0,.88);--hdb:rgba(255,255,255,.08)}
-[data-theme="light"]{--bg:#f5f5f5;--bg2:#fff;--card:#fff;--cb:rgba(0,0,0,.08);--text:#1a1a1a;--ts:rgba(0,0,0,.5);--td:rgba(0,0,0,.3);--hdr:rgba(255,255,255,.92);--hdb:rgba(0,0,0,.08)}
+:root{--bg:#000;--bg2:#111;--card:rgba(255,255,255,.06);--cb:rgba(255,255,255,.1);--text:#fff;--ts:rgba(255,255,255,.55);--td:rgba(255,255,255,.3);--accent:#CBA2E6}
+[data-theme="light"]{--bg:#f5f5f5;--bg2:#fff;--card:#fff;--cb:rgba(0,0,0,.08);--text:#1a1a1a;--ts:rgba(0,0,0,.5);--td:rgba(0,0,0,.3);--accent:#CBA2E6}
 html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:-apple-system,BlinkMacSystemFont,'PingFang SC',sans-serif;transition:background .3s,color .3s}
 #app{width:100%;height:100%}
+.img-fade{transition:opacity .6s}
 </style>
 </head>
 <body>
 <div id="app" v-cloak>
   <div style="display:flex;align-items:center;justify-content:center;height:100%;flex-direction:column;text-align:center;padding:20px">
-    <div style="width:80px;height:80px;border-radius:50%;border:3px solid #00c853;display:flex;align-items:center;justify-content:center;margin-bottom:20px">
-      <span style="font-size:32px;color:#00c853">晕</span>
+    <div style="width:140px;height:140px;border-radius:50%;border:3px solid var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:24px;overflow:hidden;background:var(--card)">
+      <img :src="showNormal?'头图-不晕.png':'头图-晕.png'" class="img-fade" style="width:100%;height:100%;object-fit:cover" alt="晕车检测">
     </div>
     <h1 style="font-size:28px;font-weight:200;letter-spacing:4px;margin-bottom:8px">{{title}}</h1>
     <p style="color:var(--ts);font-size:13px;margin-bottom:32px">驾驶舒适度实时检测</p>
-    <button style="padding:12px 40px;border-radius:24px;border:none;background:#00c853;color:#000;font-size:15px;font-weight:600;cursor:pointer" @click="start">
+    <button style="padding:14px 48px;border-radius:28px;border:none;background:var(--accent);color:#000;font-size:16px;font-weight:600;cursor:pointer" @click="start">
       {{sensorsReady?'开始测评':'授权传感器'}}
     </button>
-    <div style="margin-top:32px;display:flex;gap:24px">
+    <div style="margin-top:36px;display:flex;gap:28px">
       <div style="text-align:center;cursor:pointer" @click="sensVisible=!sensVisible">
-        <div style="width:40px;height:40px;border-radius:50%;background:var(--card);border:1px solid var(--cb);display:flex;align-items:center;justify-content:center;margin:0 auto 4px">⚙️</div>
-        <span style="font-size:10px;color:var(--ts)">灵敏度</span>
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--card);border:1px solid var(--cb);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:18px">⚙️</div>
+        <span style="font-size:11px;color:var(--ts)">灵敏度</span>
       </div>
       <div style="text-align:center;cursor:pointer" @click="themeVisible=!themeVisible">
-        <div style="width:40px;height:40px;border-radius:50%;background:var(--card);border:1px solid var(--cb);display:flex;align-items:center;justify-content:center;margin:0 auto 4px">🎨</div>
-        <span style="font-size:10px;color:var(--ts)">主题</span>
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--card);border:1px solid var(--cb);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:18px">🎨</div>
+        <span style="font-size:11px;color:var(--ts)">主题</span>
       </div>
       <div style="text-align:center;cursor:pointer" @click="showHistory">
-        <div style="width:40px;height:40px;border-radius:50%;background:var(--card);border:1px solid var(--cb);display:flex;align-items:center;justify-content:center;margin:0 auto 4px">📊</div>
-        <span style="font-size:10px;color:var(--ts)">历史</span>
+        <div style="width:44px;height:44px;border-radius:50%;background:var(--card);border:1px solid var(--cb);display:flex;align-items:center;justify-content:center;margin:0 auto 6px;font-size:18px">📊</div>
+        <span style="font-size:11px;color:var(--ts)">历史</span>
       </div>
     </div>
     <div v-if="sensVisible" style="position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--cb);padding:20px;border-radius:16px 16px 0 0;z-index:10">
       <div style="font-size:15px;font-weight:600;margin-bottom:12px;color:var(--text)">选择灵敏度</div>
       <div style="display:flex;gap:8px">
-        <div v-for="lv in ['mild','moderate','severe']" :key="lv" @click="sensitivity=lv;sensVisible=false"
-          :style="{flex:1,padding:'10px',borderRadius:'10px',textAlign:'center',cursor:'pointer',background:sensitivity===lv?'#00c853':'var(--card)',color:sensitivity===lv?'#000':'var(--text)',border:sensitivity===lv?'2px solid #00c853':'2px solid var(--cb)'}">
+        <div v-for="lv in ['mild','moderate','severe']" :key="lv" @click="sensitivity=lv;sensVisible=false;saveS()"
+          :style="{flex:1,padding:'12px',borderRadius:'12px',textAlign:'center',cursor:'pointer',background:sensitivity===lv?'var(--accent)':'var(--card)',color:sensitivity===lv?'#000':'var(--text)',border:sensitivity===lv?'2px solid var(--accent)':'2px solid var(--cb)'}">
           {{lv==='mild'?'轻度':lv==='moderate'?'中度':'重度'}}
         </div>
       </div>
@@ -50,74 +51,74 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
     <div v-if="themeVisible" style="position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:1px solid var(--cb);padding:20px;border-radius:16px 16px 0 0;z-index:10">
       <div style="font-size:15px;font-weight:600;margin-bottom:12px;color:var(--text)">选择主题</div>
       <div style="display:flex;gap:8px">
-        <div @click="setTheme('dark');themeVisible=false" style="flex:1;padding:10px;borderRadius:10px;textAlign:center;cursor:pointer;background:theme==='dark'?'#00c853':'var(--card)';color:theme==='dark'?'#000':'var(--text)';border:theme==='dark'?'2px solid #00c853':'2px solid var(--cb)">深色</div>
-        <div @click="setTheme('light');themeVisible=false" style="flex:1;padding:10px;borderRadius:10px;textAlign:center;cursor:pointer;background:theme==='light'?'#00c853':'var(--card)';color:theme==='light'?'#000':'var(--text)';border:theme==='light'?'2px solid #00c853':'2px solid var(--cb)">浅色</div>
+        <div @click="setTheme('dark');themeVisible=false" :style="{flex:1,padding:'12px',borderRadius:'12px',textAlign:'center',cursor:'pointer',background:theme==='dark'?'var(--accent)':'var(--card)',color:theme==='dark'?'#000':'var(--text)',border:theme==='dark'?'2px solid var(--accent)':'2px solid var(--cb)'}">深色</div>
+        <div @click="setTheme('light');themeVisible=false" :style="{flex:1,padding:'12px',borderRadius:'12px',textAlign:'center',cursor:'pointer',background:theme==='light'?'var(--accent)':'var(--card)',color:theme==='light'?'#000':'var(--text)',border:theme==='light'?'2px solid var(--accent)':'2px solid var(--cb)'}">浅色</div>
       </div>
     </div>
     <div v-if="recording" style="position:fixed;inset:0;background:var(--bg);z-index:20;display:flex;flex-direction:column">
       <div style="display:flex;justify-content:space-between;padding:12px 16px;align-items:center">
         <span style="font-size:14px;font-weight:600;color:var(--text)">{{paused?'已暂停':'检测中'}}</span>
         <div style="display:flex;gap:10px">
-          <button @click="togglePause" :style="{padding:'10px 20px',borderRadius:'16px',background:paused?'#ff9800':'var(--card)',border:paused?'none':'1px solid var(--cb)',color:paused?'#000':'var(--text)',fontSize:'14px',fontWeight:'600',cursor:'pointer'}">{{paused?'▶ 继续':'⏸ 暂停'}}</button>
+          <button @click="togglePause" :style="{padding:'10px 20px',borderRadius:'16px',background:paused?'var(--accent)':'var(--card)',border:paused?'none':'1px solid var(--cb)',color:paused?'#000':'var(--text)',fontSize:'14px',fontWeight:'600',cursor:'pointer'}">{{paused?'▶ 继续':'⏸ 暂停'}}</button>
           <button @click="stop" style="padding:10px 24px;border-radius:16px;background:#ff1744;border:none;color:#fff;font-size:14px;font-weight:600;cursor:pointer">结束检测</button>
         </div>
       </div>
       <div v-if="paused" style="position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:25;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px">
-        <div style="font-size:48px;font-weight:200;color:#ff9800;letter-spacing:8px">已暂停</div>
-        <button @click="togglePause" style="padding:16px 48px;border-radius:28px;background:#ff9800;border:none;color:#000;font-size:18px;font-weight:600;cursor:pointer">▶ 继续检测</button>
+        <div style="font-size:48px;font-weight:200;color:var(--accent);letter-spacing:8px">已暂停</div>
+        <button @click="togglePause" style="padding:18px 56px;border-radius:28px;background:var(--accent);border:none;color:#000;font-size:20px;font-weight:600;cursor:pointer">▶ 继续检测</button>
         <button @click="stop" style="padding:12px 36px;border-radius:24px;background:transparent;border:2px solid rgba(255,255,255,.2);color:var(--ts);font-size:14px;cursor:pointer">结束检测</button>
       </div>
       <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center">
-        <div style="position:relative;width:140px;height:140px">
-          <svg width="140" height="140" viewBox="0 0 140 140">
-            <circle cx="70" cy="70" r="60" fill="none" stroke="var(--cb)" stroke-width="5"/>
-            <circle cx="70" cy="70" r="60" fill="none" :stroke="score>=90?'#00c853':score>=80?'#ff9800':'#ff1744'" stroke-width="5" stroke-linecap="round" stroke-dasharray="377" :stroke-dashoffset="377*(1-score/100)" transform="rotate(-90 70 70)" style="transition:stroke-dashoffset .5s"/>
+        <div style="position:relative;width:150px;height:150px">
+          <svg width="150" height="150" viewBox="0 0 150 150">
+            <circle cx="75" cy="75" r="65" fill="none" stroke="var(--cb)" stroke-width="5"/>
+            <circle cx="75" cy="75" r="65" fill="none" :stroke="score>=90?'var(--accent)':score>=80?'#ff9800':'#ff1744'" stroke-width="5" stroke-linecap="round" stroke-dasharray="408" :stroke-dashoffset="408*(1-score/100)" transform="rotate(-90 75 75)" style="transition:stroke-dashoffset .5s"/>
           </svg>
           <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-            <span style="font-size:42px;font-weight:200;font-family:monospace;color:var(--text)">{{score}}</span>
-            <span style="font-size:10px;color:var(--ts)">舒适度</span>
+            <span style="font-size:48px;font-weight:200;font-family:monospace;color:var(--text)">{{score}}</span>
+            <span style="font-size:11px;color:var(--ts)">舒适度</span>
           </div>
         </div>
-        <div style="display:flex;gap:24px;margin-top:24px">
-          <div style="text-align:center"><div style="font-size:16px;font-weight:700;font-family:monospace;color:var(--text)">{{fmtTime(elapsed)}}</div><div style="font-size:9px;color:var(--ts)">时长</div></div>
-          <div style="text-align:center"><div style="font-size:16px;font-weight:700;font-family:monospace;color:var(--text)">{{(dist/1000).toFixed(2)}}</div><div style="font-size:9px;color:var(--ts)">公里</div></div>
-          <div style="text-align:center"><div style="font-size:16px;font-weight:700;font-family:monospace;color:var(--text)">{{events.length}}</div><div style="font-size:9px;color:var(--ts)">事件</div></div>
+        <div style="display:flex;gap:28px;margin-top:24px">
+          <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:monospace;color:var(--text)">{{fmtTime(elapsed)}}</div><div style="font-size:10px;color:var(--ts)">时长</div></div>
+          <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:monospace;color:var(--text)">{{(dist/1000).toFixed(2)}}</div><div style="font-size:10px;color:var(--ts)">公里</div></div>
+          <div style="text-align:center"><div style="font-size:18px;font-weight:700;font-family:monospace;color:var(--text)">{{events.length}}</div><div style="font-size:10px;color:var(--ts)">事件</div></div>
         </div>
         <div style="margin-top:20px;width:90%;max-height:200px;overflow-y:auto">
           <div v-for="(ev,i) in events.slice(0,10)" :key="i" style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--cb)">
-            <span style="font-size:12px;color:var(--text)">{{ev.name}} <span :style="{color:ev.level===1?'#00c853':ev.level===2?'#ff9800':'#ff1744'}">({{ev.level===1?'轻微':ev.level===2?'中等':'严重'}})</span></span>
-            <span style="font-size:11px;color:var(--ts)">-{{ev.ded.toFixed(1)}}分</span>
+            <span style="font-size:13px;color:var(--text)">{{ev.name}} <span :style="{color:ev.level===1?'var(--accent)':ev.level===2?'#ff9800':'#ff1744'}">({{ev.level===1?'轻微':ev.level===2?'中等':'严重'}})</span></span>
+            <span style="font-size:12px;color:var(--ts)">-{{ev.ded.toFixed(1)}}分</span>
           </div>
         </div>
       </div>
     </div>
     <div v-if="showReport" style="position:fixed;inset:0;background:var(--bg);z-index:20;overflow-y:auto;padding:20px 16px">
       <div style="text-align:center;padding:20px 0">
-        <div style="position:relative;width:120px;height:120px;margin:0 auto">
-          <svg width="120" height="120" viewBox="0 0 120 120">
-            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--cb)" stroke-width="5"/>
-            <circle cx="60" cy="60" r="52" fill="none" :stroke="reportData.score>=90?'#00c853':reportData.score>=80?'#ff9800':'#ff1744'" stroke-width="5" stroke-linecap="round" stroke-dasharray="327" :stroke-dashoffset="327*(1-reportData.score/100)" transform="rotate(-90 60 60)"/>
+        <div style="position:relative;width:130px;height:130px;margin:0 auto">
+          <svg width="130" height="130" viewBox="0 0 130 130">
+            <circle cx="65" cy="65" r="57" fill="none" stroke="var(--cb)" stroke-width="5"/>
+            <circle cx="65" cy="65" r="57" fill="none" :stroke="reportData.score>=90?'var(--accent)':reportData.score>=80?'#ff9800':'#ff1744'" stroke-width="5" stroke-linecap="round" stroke-dasharray="358" :stroke-dashoffset="358*(1-reportData.score/100)" transform="rotate(-90 65 65)"/>
           </svg>
           <div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center">
-            <span style="font-size:36px;font-weight:200;font-family:monospace;color:var(--text)">{{reportData.score}}</span>
+            <span style="font-size:40px;font-weight:200;font-family:monospace;color:var(--text)">{{reportData.score}}</span>
           </div>
         </div>
-        <div style="font-size:20px;margin-top:12px">{{reportLevel.icon}}</div>
-        <div style="font-size:16px;font-weight:600;margin-top:4px" :style="{color:reportLevel.c}">{{reportLevel.label}}</div>
-        <div style="font-size:12px;color:var(--ts);margin-top:2px">{{reportLevel.desc}}</div>
+        <div style="font-size:22px;margin-top:12px">{{reportLevel.icon}}</div>
+        <div style="font-size:18px;font-weight:600;margin-top:4px" :style="{color:reportLevel.c}">{{reportLevel.label}}</div>
+        <div style="font-size:13px;color:var(--ts);margin-top:4px">{{reportLevel.desc}}</div>
       </div>
-      <div style="background:var(--card);border:1px solid var(--cb);border-radius:12px;padding:14px;margin-bottom:10px">
+      <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
         <div style="display:flex;justify-content:space-around;text-align:center">
-          <div><div style="font-size:16px;font-weight:700;color:var(--text)">{{reportData.events.length}}</div><div style="font-size:9px;color:var(--ts)">事件</div></div>
-          <div><div style="font-size:16px;font-weight:700;color:var(--text)">{{fmtTime(reportData.duration)}}</div><div style="font-size:9px;color:var(--ts)">时长</div></div>
-          <div><div style="font-size:16px;font-weight:700;color:var(--text)">{{(reportData.distance/1000).toFixed(1)}}km</div><div style="font-size:9px;color:var(--ts)">距离</div></div>
+          <div><div style="font-size:18px;font-weight:700;color:var(--text)">{{reportData.events.length}}</div><div style="font-size:10px;color:var(--ts)">事件</div></div>
+          <div><div style="font-size:18px;font-weight:700;color:var(--text)">{{fmtTime(reportData.duration)}}</div><div style="font-size:10px;color:var(--ts)">时长</div></div>
+          <div><div style="font-size:18px;font-weight:700;color:var(--text)">{{(reportData.distance/1000).toFixed(1)}}km</div><div style="font-size:10px;color:var(--ts)">距离</div></div>
         </div>
       </div>
-      <div v-for="(ev,i) in reportData.events" :key="i" style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cb);font-size:13px">
-        <span style="color:var(--text)">{{ev.name}} <span :style="{color:ev.level===1?'#00c853':ev.level===2?'#ff9800':'#ff1744',fontSize:'11px'}">{{ev.level===1?'轻微':ev.level===2?'中等':'严重'}}</span></span>
-        <span style="color:var(--ts);font-size:12px">-{{ev.ded.toFixed(1)}}分</span>
+      <div v-for="(ev,i) in reportData.events" :key="i" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--cb);font-size:14px">
+        <span style="color:var(--text)">{{ev.name}} <span :style="{color:ev.level===1?'var(--accent)':ev.level===2?'#ff9800':'#ff1744',fontSize:'12px'}">{{ev.level===1?'轻微':ev.level===2?'中等':'严重'}}</span></span>
+        <span style="color:var(--ts);font-size:13px">-{{ev.ded.toFixed(1)}}分</span>
       </div>
-      <button @click="showReport=false" style="width:100%;margin-top:16px;padding:12px;border-radius:24px;border:none;background:#00c853;color:#000;font-size:15px;font-weight:600;cursor:pointer">返回首页</button>
+      <button @click="showReport=false" style="width:100%;margin-top:16px;padding:14px;border-radius:28px;border:none;background:var(--accent);color:#000;font-size:16px;font-weight:600;cursor:pointer">返回首页</button>
     </div>
     <div v-if="showHist" style="position:fixed;inset:0;background:var(--bg);z-index:20;overflow-y:auto;padding:20px 16px">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
@@ -129,10 +130,10 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
         <div style="font-size:40px;margin-bottom:8px">📭</div>
         <p>暂无历史报告</p>
       </div>
-      <div v-for="(r,i) in history" :key="i" @click="viewReport(r)" style="background:var(--card);border:1px solid var(--cb);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer">
+      <div v-for="(r,i) in history" :key="i" @click="viewReport(r)" style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:10px;cursor:pointer">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><div style="font-size:13px;font-weight:600;color:var(--text)">{{r.date}}</div><div style="font-size:11px;color:var(--ts);margin-top:2px">{{fmtTime(r.duration)}} · {{(r.distance/1000).toFixed(1)}}km</div></div>
-          <div style="font-size:20px;font-weight:700;font-family:monospace" :style="{color:r.score>=90?'#00c853':r.score>=80?'#ff9800':'#ff1744'}">{{r.score}}</div>
+          <div><div style="font-size:14px;font-weight:600;color:var(--text)">{{r.date}}</div><div style="font-size:12px;color:var(--ts);margin-top:3px">{{fmtTime(r.duration)}} · {{(r.distance/1000).toFixed(1)}}km</div></div>
+          <div style="font-size:22px;font-weight:700;font-family:monospace" :style="{color:r.score>=90?'var(--accent)':r.score>=80?'#ff9800':'#ff1744'}">{{r.score}}</div>
         </div>
       </div>
     </div>
@@ -140,17 +141,18 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
 </div>
 <script src="https://cdn.jsdelivr.net/npm/vue@3/dist/vue.global.prod.js"></script>
 <script>
-var PROFILES={mild:{b:{1:.27,2:.36,3:.46},a:{1:.26,2:.35,3:.44},t:{1:.27,2:.37,3:.47},jw:500,jt:{1:1.4,2:1.8,3:2.4},ja:1.2,ab:.8},moderate:{b:{1:.226,2:.305,3:.386},a:{1:.214,2:.242,3:.317},t:{1:.225,2:.311,3:.395},jw:400,jt:{1:1.15,2:1.5,3:2.0},ja:1.0,ab:.6},severe:{b:{1:.16,2:.22,3:.30},a:{1:.15,2:.20,3:.27},t:{1:.16,2:.22,3:.30},jw:300,jt:{1:.8,2:1.1,3:1.5},ja:.7,ab:.45}};
+var PROFILES={mild:{b:{1:.27,2:.36,3:.46},a:{1:.26,2:.35,3:.44},t:{1:.27,2:.37,3:.47}},moderate:{b:{1:.226,2:.305,3:.386},a:{1:.214,2:.242,3:.317},t:{1:.225,2:.311,3:.395}},severe:{b:{1:.16,2:.22,3:.30},a:{1:.15,2:.20,3:.27},t:{1:.16,2:.22,3:.30}}};
 var EW={brake:1.5,accel:.75,turn:.8,jerk:.5,sway:.5};
 var ET=[{type:'brake',name:'急减速'},{type:'accel',name:'急加速'},{type:'turn',name:'急转向'},{type:'jerk',name:'顿挫'},{type:'sway',name:'摇摆'}];
 Vue.createApp({
-  data:function(){return{title:'晕不晕',theme:'dark',sensorsReady:true,sensitivity:'moderate',sensVisible:false,themeVisible:false,recording:false,showReport:false,showHist:false,score:100,elapsed:0,dist:0,paused:false,events:[],reportData:{events:[],duration:0,distance:0,score:0},history:[]}},
+  data:function(){return{title:'晕不晕',theme:'dark',sensorsReady:true,sensitivity:'moderate',sensVisible:false,themeVisible:false,recording:false,showReport:false,showHist:false,showNormal:true,score:100,elapsed:0,dist:0,paused:false,events:[],reportData:{events:[],duration:0,distance:0,score:0},history:[]}},
   computed:{
     reportLevel:function(){var s=this.reportData.score;if(s>=95)return{label:'无感',desc:'完全没有晕车感',c:'#00c853',icon:'😊'};if(s>=88)return{label:'轻微',desc:'几乎感觉不到不适',c:'#4caf50',icon:'🙂'};if(s>=78)return{label:'一般',desc:'略有不适但可接受',c:'#8bc34a',icon:'😐'};if(s>=65)return{label:'小晕',desc:'开始出现晕车症状',c:'#ff9800',icon:'😕'};if(s>=50)return{label:'晕',desc:'明显晕车不适',c:'#ff5722',icon:'😣'};if(s>=30)return{label:'严重',desc:'严重晕车',c:'#f44336',icon:'🤮'};return{label:'非常严重',desc:'极度不适',c:'#b71c1c',icon:'💀'}}
   },
   methods:{
-    setTheme:function(t){this.theme=t;document.documentElement.setAttribute('data-theme',t)},
+    setTheme:function(t){this.theme=t;document.documentElement.setAttribute('data-theme',t);try{localStorage.setItem('theme',t)}catch(e){}},
     fmtTime:function(s){var m=Math.floor(s/60),ss=s%60;return(m<10?'0':'')+m+':'+(ss<10?'0':'')+ss},
+    saveS:function(){try{localStorage.setItem('sens',this.sensitivity)}catch(e){}},
     start:function(){var self=this;if(!self.sensorsReady){self.sensorsReady=true;return}self.recording=true;self.paused=false;self.score=100;self.elapsed=0;self.dist=0;self.events=[];self._totalDed=0;self._recent=[];self._accelH=[];self._gravSamples=[];self._calibrated=false;self._startTime=Date.now();self._motionH=function(e){self.onMotion(e)};window.addEventListener('devicemotion',self._motionH);self._timer=setInterval(function(){if(!self.paused)self.elapsed=Math.floor((Date.now()-self._startTime)/1000)},1000);if(navigator.geolocation)self._geoId=navigator.geolocation.watchPosition(function(p){self.dist+=0.001},function(){},{enableHighAccuracy:true})},
     stop:function(){var self=this;self.recording=false;window.removeEventListener('devicemotion',self._motionH);clearInterval(self._timer);if(self._geoId)navigator.geolocation.clearWatch(self._geoId);var r={events:self.events.slice(),duration:self.elapsed,distance:self.dist,score:self.score,date:new Date().toLocaleDateString('zh-CN')};self.history.unshift(r);try{localStorage.setItem('history',JSON.stringify(self.history.slice(0,20)))}catch(e){}self.reportData=r;self.showReport=true},
     togglePause:function(){this.paused=!this.paused},
@@ -159,7 +161,14 @@ Vue.createApp({
     onMotion:function(e){if(!this.recording)return;var a=e.acceleration||e.accelerationIncludingGravity;if(!a)return;var ax=a.x||0,ay=a.y||0;if(!this._calibrated){this._gravSamples.push({x:ax,y:ay});if(this._gravSamples.length>=15){var gx=0,gy=0;for(var i=0;i<this._gravSamples.length;i++){gx+=this._gravSamples[i].x;gy+=this._gravSamples[i].y}this._gx=gx/15;this._gy=gy/15;this._calibrated=true;this._gravSamples=[]}return}ax-=this._gx;ay-=this._gy;var fx=Math.abs(ax)<0.3?0:ax;var fy=Math.abs(ay)<0.3?0:ay;var p=PROFILES[this.sensitivity];var now=Date.now();this._accelH.push({x:fx,y:fy,t:now});if(this._accelH.length>200)this._accelH=this._accelH.slice(-200);var decel=-fy/9.8;if(decel>=p.b[3])this.addEvt('急减速',3,1.5);else if(decel>=p.b[2])this.addEvt('急减速',2,1.5);else if(decel>=p.b[1])this.addEvt('急减速',1,1.5);var accel=fy/9.8;if(accel>=p.a[3])this.addEvt('急加速',3,.75);else if(accel>=p.a[2])this.addEvt('急加速',2,.75);else if(accel>=p.a[1])this.addEvt('急加速',1,.75);var lat=Math.abs(fx/9.8);if(lat>=p.t[3])this.addEvt('急转向',3,.8);else if(lat>=p.t[2])this.addEvt('急转向',2,.8);else if(lat>=p.t[1])this.addEvt('急转向',1,.8)},
     addEvt:function(name,level,weight){var now=Date.now();var dup=this._recent.filter(function(e){return e.name===name&&(now-e.t)<2000});if(dup.length>0)return;var ded=level*level*weight;this._recent.push({name:name,t:now});this._totalDed+=ded;this.score=Math.max(0,Math.round((100-this._totalDed)*10)/10);this.events.unshift({name:name,level:level,ded:ded})}
   },
-  mounted:function(){var self=this;try{var t=localStorage.getItem('theme');if(t)self.setTheme(t)}catch(e){}try{var s=localStorage.getItem('sens');if(s&&PROFILES[s])self.sensitivity=s}catch(e){}try{var h=localStorage.getItem('history');if(h)self.history=JSON.parse(h)}catch(e){}}
+  mounted:function(){
+    var self=this;
+    try{var t=localStorage.getItem('theme');if(t)self.setTheme(t)}catch(e){}
+    try{var s=localStorage.getItem('sens');if(s&&PROFILES[s])self.sensitivity=s}catch(e){}
+    try{var h=localStorage.getItem('history');if(h)self.history=JSON.parse(h)}catch(e){}
+    self._imgTimer=setInterval(function(){self.showNormal=!self.showNormal},5000);
+  },
+  beforeUnmount:function(){if(this._imgTimer)clearInterval(this._imgTimer)}
 }).mount('#app');
 </script>
 </body>
