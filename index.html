@@ -97,14 +97,16 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
       <span style="font-size:17px;font-weight:600;color:var(--text)">报告详情</span>
       <div style="width:60px"></div>
     </div>
+    <!-- 主分数显示：综合评分 -->
     <div style="text-align:center;padding:10px 0">
       <div style="display:flex;align-items:baseline;justify-content:center">
-        <span style="font-size:72px;font-weight:100;font-family:monospace;color:var(--text)">{{scoreInt}}</span>
-        <span style="font-size:24px;font-weight:100;font-family:monospace;color:var(--text)">.{{scoreDec}}</span>
+        <span style="font-size:80px;font-weight:100;font-family:monospace;color:var(--text)">{{Math.floor(finalScore)}}</span>
+        <span style="font-size:28px;font-weight:100;font-family:monospace;color:var(--text)">.{{Math.abs(Math.round((finalScore%1)*10))}}</span>
       </div>
       <div style="font-size:18px;font-weight:600;margin-top:8px" :style="{color:reportLevel.c}">{{reportLevel.label}}</div>
-      <div style="font-size:14px;font-weight:600;margin-top:12px;padding:8px 16px;background:var(--card);border-radius:20px;display:inline-block;color:var(--accent)">{{getSlogan(reportData.score)}}</div>
+      <div style="font-size:14px;font-weight:600;margin-top:12px;padding:8px 16px;background:var(--card);border-radius:20px;display:inline-block;color:var(--accent)">{{getSlogan(finalScore)}}</div>
     </div>
+    <!-- 评分详情 -->
     <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
       <div style="font-size:16px;font-weight:600;margin-bottom:10px;color:var(--text)">综合评分</div>
       <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cb)">
@@ -115,26 +117,49 @@ html,body{height:100%;width:100%;overflow:hidden;background:var(--bg);color:var(
         <span style="font-size:14px;color:var(--ts);display:flex;align-items:center">距离系数<span class="qmark" @click="showTip('density')">?</span></span>
         <span style="font-size:14px;color:var(--text)">{{densityInfo.factor}}</span>
       </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--cb)">
+        <span style="font-size:14px;color:var(--ts)">时间系数</span>
+        <span style="font-size:14px;color:var(--text)">{{reportData.duration/60>30?'0.95x':'1.0x'}}</span>
+      </div>
       <div style="display:flex;justify-content:space-between;padding:8px 0">
         <span style="font-size:14px;color:var(--ts);display:flex;align-items:center">综合评分<span class="qmark" @click="showTip('final')">?</span></span>
         <span style="font-size:16px;font-weight:700;color:var(--accent)">{{finalScore}}分</span>
       </div>
     </div>
+    <!-- 行程数据 -->
     <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
       <div style="display:flex;justify-content:space-around;text-align:center">
-        <div><div style="font-size:20px;font-weight:700;color:var(--text)">{{reportData.events.length}}</div><div style="font-size:11px;color:var(--ts)">事件</div></div>
+        <div><div style="font-size:20px;font-weight:700;color:var(--text)">{{severeEventCount}}</div><div style="font-size:11px;color:var(--ts)">严重事件</div></div>
         <div><div style="font-size:20px;font-weight:700;color:var(--text)">{{fmtTime(reportData.duration)}}</div><div style="font-size:11px;color:var(--ts)">时长</div></div>
         <div><div style="font-size:20px;font-weight:700;color:var(--text)">{{(reportData.distance/1000).toFixed(1)}}km</div><div style="font-size:11px;color:var(--ts)">距离</div></div>
       </div>
     </div>
+    <!-- 事件汇总 -->
+    <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
+      <div style="font-size:16px;font-weight:600;margin-bottom:10px;color:var(--text)">事件汇总</div>
+      <div style="display:flex;justify-content:space-around;text-align:center">
+        <div style="flex:1;padding:10px;background:rgba(255,152,0,.08);border-radius:10px;margin:0 4px">
+          <div style="font-size:18px;font-weight:700;color:#ff9800">{{minorEventCount}}</div>
+          <div style="font-size:12px;color:var(--ts)">轻微事件</div>
+          <div style="font-size:10px;color:var(--td)">微弱、轻微</div>
+        </div>
+        <div style="flex:1;padding:10px;background:rgba(255,23,68,.08);border-radius:10px;margin:0 4px">
+          <div style="font-size:18px;font-weight:700;color:#ff1744">{{severeEventCount}}</div>
+          <div style="font-size:12px;color:var(--ts)">严重事件</div>
+          <div style="font-size:10px;color:var(--td)">轻度及以上</div>
+        </div>
+      </div>
+    </div>
+    <!-- 时间信息 -->
     <div style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
       <div style="font-size:14px;color:var(--ts)">开始时间：{{reportData.startTime}}</div>
       <div style="font-size:14px;color:var(--ts);margin-top:6px">结束时间：{{reportData.endTime}}</div>
     </div>
-    <div v-if="reportData.events.length>0" style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
-      <div style="font-size:16px;font-weight:600;margin-bottom:12px;color:var(--text)">事件详情</div>
-      <div v-for="(ev,i) in reportData.events" :key="i" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--cb)">
-        <span style="font-size:14px;color:var(--text)">{{ev.name}} <span :style="{color:ev.level<=2?'var(--accent)':'#ff9800',fontSize:'12px'}">({{ev.levelName}})</span></span>
+    <!-- 严重事件详情 -->
+    <div v-if="severeEventsList.length>0" style="background:var(--card);border:1px solid var(--cb);border-radius:14px;padding:16px;margin-bottom:12px">
+      <div style="font-size:16px;font-weight:600;margin-bottom:12px;color:var(--text)">严重事件详情</div>
+      <div v-for="(ev,i) in severeEventsList" :key="i" style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--cb)">
+        <span style="font-size:14px;color:var(--text)">{{ev.name}} <span style="color:#ff9800;font-size:12px">({{ev.levelName}})</span></span>
         <span style="color:var(--ts);font-size:13px">-{{ev.ded.toFixed(1)}}分</span>
       </div>
     </div>
@@ -263,9 +288,34 @@ Vue.createApp({
   computed:{
     scoreInt:function(){return Math.floor(this.score)},
     scoreDec:function(){return Math.abs(Math.round((this.score%1)*10))},
-    finalScore:function(){var distKm=this.reportData.distance/1000;var factor=getDensityFactor(this.reportData.events.length,distKm);return Math.max(0,Math.round((this.reportData.score*factor)*10)/10)},
-    densityInfo:function(){var distKm=this.reportData.distance/1000;var eventCount=this.reportData.events.length;if(distKm<.5)return{density:'-',factor:'1.0x',level:'距离过短'};var density=(eventCount/distKm).toFixed(2);var factor=getDensityFactor(eventCount,distKm);var level=factor<1?'优秀':factor===1?'正常':factor<1.5?'较差':'很差';return{density:density,factor:factor+'x',level:level}},
-    reportLevel:function(){var s=this.reportData.score;if(s>=95)return{label:'无感',desc:'完全没有晕车感',c:'#00c853'};if(s>=88)return{label:'轻微',desc:'几乎感觉不到不适',c:'#4caf50'};if(s>=78)return{label:'一般',desc:'略有不适但可接受',c:'#8bc34a'};if(s>=65)return{label:'小晕',desc:'开始出现晕车症状',c:'#ff9800'};if(s>=50)return{label:'晕',desc:'明显晕车不适',c:'#ff5722'};if(s>=30)return{label:'严重',desc:'严重晕车',c:'#f44336'};return{label:'非常严重',desc:'极度不适',c:'#b71c1c'}}
+    finalScore:function(){
+      var distKm=this.reportData.distance/1000;
+      var events=this.reportData.events||[];
+      // 严重事件（level>=3）
+      var severeEvents=events.filter(function(e){return e.level>=3});
+      // 距离系数
+      var distanceFactor=getDensityFactor(severeEvents.length,distKm);
+      // 时间系数（长时间行驶适当宽容）
+      var durationMin=this.reportData.duration/60;
+      var timeFactor=durationMin>30?0.95:1;
+      // 事件密度系数
+      var eventDensity=severeEvents.length/Math.max(distKm,0.1);
+      var densityFactor=eventDensity>2?1.1:eventDensity>1?1.05:1;
+      // 综合评分
+      var score=this.reportData.score*distanceFactor*timeFactor*densityFactor;
+      return Math.min(100,Math.max(0,Math.round(score*10)/10));
+    },
+    minorEventCount:function(){
+      return(this.reportData.events||[]).filter(function(e){return e.level<=2}).length;
+    },
+    severeEventCount:function(){
+      return(this.reportData.events||[]).filter(function(e){return e.level>=3}).length;
+    },
+    severeEventsList:function(){
+      return(this.reportData.events||[]).filter(function(e){return e.level>=3});
+    },
+    densityInfo:function(){var distKm=this.reportData.distance/1000;var severeCount=this.severeEventCount;if(distKm<.5)return{density:'-',factor:'1.0x',level:'距离过短'};var density=(severeCount/distKm).toFixed(2);var factor=getDensityFactor(severeCount,distKm);var level=factor<1?'优秀':factor===1?'正常':factor<1.5?'较差':'很差';return{density:density,factor:factor+'x',level:level}},
+    reportLevel:function(){var s=this.finalScore;if(s>=95)return{label:'无感',desc:'完全没有晕车感',c:'#00c853'};if(s>=88)return{label:'轻微',desc:'几乎感觉不到不适',c:'#4caf50'};if(s>=78)return{label:'一般',desc:'略有不适但可接受',c:'#8bc34a'};if(s>=65)return{label:'小晕',desc:'开始出现晕车症状',c:'#ff9800'};if(s>=50)return{label:'晕',desc:'明显晕车不适',c:'#ff5722'};if(s>=30)return{label:'严重',desc:'严重晕车',c:'#f44336'};return{label:'非常严重',desc:'极度不适',c:'#b71c1c'}}
   },
   methods:{
     fmtTime:function(s){var m=Math.floor(s/60),ss=s%60;return(m<10?'0':'')+m+':'+(ss<10?'0':'')+ss},
