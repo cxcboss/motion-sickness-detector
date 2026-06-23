@@ -272,9 +272,102 @@ Vue.createApp({
     fmtDateTime:function(d){return d.toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'})},
     saveS:function(){try{localStorage.setItem('sens',this.sensitivity)}catch(e){}},
     showTip:function(key){this.tipTitle=key==='base'?'基础评分说明':key==='density'?'距离系数说明':'综合评分说明';this.tipContent=TIPS[key];this.showTipVisible=true},
-    requestPermissions:function(){var self=this;self.permLoading=true;var promises=[];if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){promises.push(DeviceMotionEvent.requestPermission());promises.push(DeviceOrientationEvent.requestPermission())}Promise.all(promises).then(function(results){self.sensorsReady=results.every(function(r){return r==='granted'});if(!self.sensorsReady)self.alertMsg='部分传感器权限被拒绝';self.permLoading=false}).catch(function(){self.sensorsReady=true;self.permLoading=false})},
-    start:function(){var self=this;if(!self.sensorsReady){self.requestPermissions();return}self.page='recording';self.recording=true;self.paused=false;self.score=100;self.elapsed=0;self.dist=0;self.events=[];self._totalDed=0;self._recent=[];self._accelH=[];self._gravSamples=[];self._calibrated=false;self._gx=0;self._gy=0;self._startTime=new Date();self._motionH=function(e){self.onMotion(e)};window.addEventListener('devicemotion',self._motionH);self._timer=setInterval(function(){if(!self.paused)self.elapsed=Math.floor((Date.now()-self._startTime.getTime())/1000)},1000);self._lastGeoPos=null;self._geoId=navigator.geolocation.watchPosition(function(p){var c=p.coords;if(c.latitude&&c.longitude){if(self._lastGeoPos){var R=6371000,dLat=(c.latitude-self._lastGeoPos.lat)*Math.PI/180,dLng=(c.longitude-self._lastGeoPos.lng)*Math.PI/180,a=Math.sin(dLat/2)**2+Math.cos(self._lastGeoPos.lat*Math.PI/180)*Math.cos(c.latitude*Math.PI/180)*Math.sin(dLng/2)**2;var d=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));if(d>1&&d<100)self.dist+=d}self._lastGeoPos={lat:c.latitude,lng:c.longitude}}},function(){},{enableHighAccuracy:true});if('wakeLock' in navigator)navigator.wakeLock.request('screen').then(function(w){self._wl=w}).catch(function(){})},
-    stop:function(){var self=this;self.recording=false;self.page='report';self.prevPage='recording';window.removeEventListener('devicemotion',self._motionH);clearInterval(self._timer);if(self._geoId)navigator.geolocation.clearWatch(self._geoId);if(self._wl)try{self._wl.release()}catch(e){}var endTime=new Date();var r={events:self.events.slice(),duration:self.elapsed,distance:self.dist,score:self.score,date:self._startTime.toLocaleDateString('zh-CN'),startTime:self.fmtDateTime(self._startTime),endTime:self.fmtDateTime(endTime)};self.history.unshift(r);try{localStorage.setItem('history',JSON.stringify(self.history.slice(0,20)))}catch(e){}self.reportData=r},
+    requestPermissions:function(){
+      var self=this;
+      self.permLoading=true;
+      var promises=[];
+      // iOS需要请求传感器权限
+      if(typeof DeviceMotionEvent!=='undefined'&&typeof DeviceMotionEvent.requestPermission==='function'){
+        promises.push(DeviceMotionEvent.requestPermission());
+        promises.push(DeviceOrientationEvent.requestPermission());
+      }
+      // 请求GPS权限
+      promises.push(new Promise(function(resolve,reject){
+        if(navigator.geolocation){
+          navigator.geolocation.getCurrentPosition(
+            function(){resolve('granted')},
+            function(err){console.log('GPS error:',err.code,err.message);resolve('denied')},
+            {enableHighAccuracy:true,timeout:10000}
+          );
+        }else{resolve('no-geolocation')}
+      }));
+      Promise.all(promises).then(function(results){
+        self.sensorsReady=true;
+        self.permLoading=false;
+      }).catch(function(){
+        self.sensorsReady=true;
+        self.permLoading=false;
+      })
+    },
+    start:function(){
+      var self=this;
+      if(!self.sensorsReady){self.requestPermissions();return}
+      self.page='recording';self.recording=true;self.paused=false;self.score=100;self.elapsed=0;self.dist=0;self.events=[];
+      self._totalDed=0;self._recent=[];self._accelH=[];self._gravSamples=[];self._calibrated=false;self._gx=0;self._gy=0;self._startTime=new Date();
+      self._motionH=function(e){self.onMotion(e)};
+      window.addEventListener('devicemotion',self._motionH);
+      self._timer=setInterval(function(){if(!self.paused)self.elapsed=Math.floor((Date.now()-self._startTime.getTime())/1000)},1000);
+      self._lastGeoPos=null;
+      // GPS追踪
+      if(navigator.geolocation){
+        self._geoId=navigator.geolocation.watchPosition(
+          function(p){
+            var c=p.coords;
+            if(c.latitude&&c.longitude){
+              if(self._lastGeoPos){
+                var R=6371000;
+                var dLat=(c.latitude-self._lastGeoPos.lat)*Math.PI/180;
+                var dLng=(c.longitude-self._lastGeoPos.lng)*Math.PI/180;
+                var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(self._lastGeoPos.lat*Math.PI/180)*Math.cos(c.latitude*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+                var d=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+                if(d>1&&d<100)self.dist+=d;
+              }
+              self._lastGeoPos={lat:c.latitude,lng:c.longitude};
+            }
+          },
+          function(err){
+            console.log('GPS watch error:',err.code,err.message);
+            // 备用方案：使用getCurrentPosition轮询
+            if(!self._geoFallback){
+              self._geoFallback=setInterval(function(){
+                navigator.geolocation.getCurrentPosition(function(p){
+                  var c=p.coords;
+                  if(c.latitude&&c.longitude){
+                    if(self._lastGeoPos){
+                      var R=6371000;
+                      var dLat=(c.latitude-self._lastGeoPos.lat)*Math.PI/180;
+                      var dLng=(c.longitude-self._lastGeoPos.lng)*Math.PI/180;
+                      var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(self._lastGeoPos.lat*Math.PI/180)*Math.cos(c.latitude*Math.PI/180)*Math.sin(dLng/2)*Math.sin(dLng/2);
+                      var d=R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+                      if(d>1&&d<100)self.dist+=d;
+                    }
+                    self._lastGeoPos={lat:c.latitude,lng:c.longitude};
+                  }
+                },function(){},{enableHighAccuracy:true,timeout:5000});
+              },3000);
+            }
+          },
+          {enableHighAccuracy:true,timeout:10000,maximumAge:0}
+        );
+      }
+      if('wakeLock' in navigator)navigator.wakeLock.request('screen').then(function(w){self._wl=w}).catch(function(){});
+    },
+    stop:function(){
+      var self=this;
+      self.recording=false;
+      self.page='report';
+      self.prevPage='recording';
+      window.removeEventListener('devicemotion',self._motionH);
+      clearInterval(self._timer);
+      if(self._geoId){navigator.geolocation.clearWatch(self._geoId);self._geoId=null;}
+      if(self._geoFallback){clearInterval(self._geoFallback);self._geoFallback=null;}
+      if(self._wl)try{self._wl.release()}catch(e){}
+      var endTime=new Date();
+      var r={events:self.events.slice(),duration:self.elapsed,distance:self.dist,score:self.score,date:self._startTime.toLocaleDateString('zh-CN'),startTime:self.fmtDateTime(self._startTime),endTime:self.fmtDateTime(endTime)};
+      self.history.unshift(r);
+      try{localStorage.setItem('history',JSON.stringify(self.history.slice(0,20)))}catch(e){}
+      self.reportData=r;
+    },
     togglePause:function(){this.paused=!this.paused},
     showHistory:function(){try{var h=localStorage.getItem('history');if(h)this.history=JSON.parse(h)}catch(e){}this.page='history'},
     viewReport:function(r){this.reportData=r;this.prevPage='history';this.page='report'},
